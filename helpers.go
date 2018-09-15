@@ -16,3 +16,17 @@ func (b *boolish) UnmarshalJSON(data []byte) error {
 		return err
 	}
 }
+
+func isPresent(target string, data []string) bool {
+	return indexOf(target, data) >= 0
+}
+
+func indexOf(target string, data []string) int {
+	for i, v := range data {
+		if v == target {
+			return i
+		}
+	}
+
+	return -1 // not found
+}
