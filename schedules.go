@@ -101,6 +101,35 @@ type OrigDestTimeData struct {
 	DestTimeDate string `json:"@destTimeDate"`
 }
 
+// https://api.bart.gov/docs/sched/holiday.aspx
+func RequestSchedInfoHolidaySchedule() (res SchedInfoHolidayScheduleResponse, err error) {
+	params := make(map[string]string)
+
+	err = RequestApi(
+		"/sched.aspx",
+		"holiday",
+		params,
+		&res,
+	)
+
+	return
+}
+
+type SchedInfoHolidayScheduleResponse struct {
+	Root struct {
+		ResponseMetaData
+		Data []struct {
+			List []Holiday `json:"holiday"`
+		} `json:"holidays"`
+	}
+}
+
+type Holiday struct {
+	Name         string
+	Date         string
+	ScheduleType string `json:"schedule_type"`
+}
+
 func processScheduleParams(
 	orig, dest string,
 	time, date string,
