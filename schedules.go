@@ -194,6 +194,46 @@ type SpecialSchedule struct {
 	RoutesAffected string `json:"routes_affected"`
 }
 
+// https://api.bart.gov/docs/sched/stnsched.aspx
+func RequestSchedInfoStationSchedule(orig, date string) (res SchedInfoStationScheduleResponse, err error) {
+	params := map[string]string{"orig": orig}
+	if date != "" {
+		params["date"] = date
+	}
+
+	err = RequestApi(
+		"/sched.aspx",
+		"stnsched",
+		params,
+		&res,
+	)
+
+	return
+}
+
+type SchedInfoStationScheduleResponse struct {
+	Root struct {
+		ResponseMetaData
+		SchedNum int `json:"sched_num,string"`
+		Data     struct {
+			Name string
+			Abbr string
+			List []StationSchedule `json:"item"`
+		} `json:"station"`
+	}
+}
+
+type StationSchedule struct {
+	Line             string  `json:"@line"`
+	TrainHeadStation string  `json:"@trainHeadStation"`
+	OrigTime         string  `json:"@origTime"`
+	DestTime         string  `json:"@destTime"`
+	TrainIdx         int     `json:"@trainIdx,string"`
+	BikeFlag         boolish `json:"@bikeflag,string"`
+	TrainId          string  `json:"@trainId"`
+	Load             int     `json:"@load,string"`
+}
+
 func processScheduleParams(
 	orig, dest string,
 	time, date string,
