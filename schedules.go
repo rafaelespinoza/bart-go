@@ -158,6 +158,42 @@ type ScheduleEdition struct {
 	EffectiveDate string `json:"@effectivedate"`
 }
 
+// https://api.bart.gov/docs/sched/special.aspx
+func RequestSchedInfoSpecialSchedules() (res SchedInfoSpecialSchedulesResponse, err error) {
+	params := make(map[string]string)
+
+	err = RequestApi(
+		"/sched.aspx",
+		"special",
+		params,
+		&res,
+	)
+
+	return
+}
+
+type SchedInfoSpecialSchedulesResponse struct {
+	Root struct {
+		ResponseMetaData
+		Data struct {
+			List []SpecialSchedule `json:"special_schedule"`
+		} `json:"special_schedules"`
+	}
+}
+
+type SpecialSchedule struct {
+	StartDate      string `json:"start_date"`
+	EndDate        string `json:"end_date"`
+	StartTime      string `json:"start_time"`
+	EndTime        string `json:"end_time"`
+	Text           cDataSection
+	Link           cDataSection
+	Orig           string
+	Dest           string
+	DayOfWeek      string `json:"day_of_week"`
+	RoutesAffected string `json:"routes_affected"`
+}
+
 func processScheduleParams(
 	orig, dest string,
 	time, date string,
