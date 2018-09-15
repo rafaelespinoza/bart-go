@@ -130,6 +130,34 @@ type Holiday struct {
 	ScheduleType string `json:"schedule_type"`
 }
 
+// https://api.bart.gov/docs/sched/scheds.aspx
+func RequestSchedInfoSchedules() (res SchedInfoSchedulesResponse, err error) {
+	params := make(map[string]string)
+
+	err = RequestApi(
+		"/sched.aspx",
+		"scheds",
+		params,
+		&res,
+	)
+
+	return
+}
+
+type SchedInfoSchedulesResponse struct {
+	Root struct {
+		ResponseMetaData
+		Data struct {
+			List []ScheduleEdition `json:"schedule"`
+		} `json:"schedules"`
+	}
+}
+
+type ScheduleEdition struct {
+	Id            int    `json:"@id,string"`
+	EffectiveDate string `json:"@effectivedate"`
+}
+
 func processScheduleParams(
 	orig, dest string,
 	time, date string,
