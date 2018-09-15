@@ -2,6 +2,7 @@ package bart
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // https://api.bart.gov/docs/sched/arrive.aspx
@@ -234,6 +235,70 @@ type StationSchedule struct {
 	Load             int     `json:"@load,string"`
 }
 
+// https://api.bart.gov/docs/sched/routesched.aspx
+func RequestSchedInfoRouteSchedule(
+	route, sched int,
+	date, time string,
+	legend bool,
+) (res SchedInfoRouteScheduleResponse, err error) {
+	params := map[string]string{"route": strconv.Itoa(route)}
+
+	if sched != 0 {
+		if s, e := validateRouteSchedNum(sched); e != nil {
+			return res, e
+		} else {
+			params["sched"] = string(s)
+		}
+	} else if date != "" {
+		if d, e := validateRouteSchedDate(date); e != nil {
+			return res, e
+		} else {
+			params["date"] = d
+		}
+	}
+
+	if time != "" {
+		params["time"] = time
+	}
+
+	if legend {
+		params["l"] = "1"
+	}
+
+	err = RequestApi(
+		"/sched.aspx",
+		"routesched",
+		params,
+		&res,
+	)
+
+	return
+}
+
+type SchedInfoRouteScheduleResponse struct {
+	Root struct {
+		ResponseMetaData
+		SchedNum int `json:"sched_num,string"`
+		Data     struct {
+			List []TrainSchedule `json:"train"`
+		} `json:"route"`
+	}
+}
+
+type TrainSchedule struct {
+	TrainId  string      `json:"@trainId"`
+	TrainIdx int         `json:"@trainIdx,string"`
+	Index    int         `json:"@index,string"`
+	Stops    []TrainStop `json:"stop"`
+}
+
+type TrainStop struct {
+	Station  string  `json:"@station"`
+	Load     string  `json:"@load"`
+	Level    string  `json:"@level"`
+	BikeFlag boolish `json:"@bikeflag,string"`
+}
+
 func processScheduleParams(
 	orig, dest string,
 	time, date string,
@@ -281,4 +346,14 @@ func validateBeforeAfter(val int) (int, error) {
 	} else {
 		return val, nil
 	}
+}
+
+func validateRouteSchedNum(sched int) (int, error) {
+	// TODO: should be > 40, BART doesn't seem to have published schedules before 41
+	return sched, nil
+}
+
+func validateRouteSchedDate(date string) (string, error) {
+	// TODO: validate format `mm/dd/yyyy` or `wd|sa|su`
+	return date, nil
 }
