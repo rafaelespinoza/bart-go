@@ -8,16 +8,8 @@ import (
 type SchedulesAPI struct{}
 
 // https://api.bart.gov/docs/sched/arrive.aspx
-func (a *SchedulesAPI) RequestArrivals(
-	orig string,
-	dest string,
-	time string,
-	date string,
-	before int,
-	after int,
-	legend bool,
-) (res TripsResponse, err error) {
-	params, err := processScheduleParams(orig, dest, time, date, before, after, legend)
+func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
+	params, err := p.validateMap()
 
 	if err != nil {
 		return res, err
@@ -34,16 +26,8 @@ func (a *SchedulesAPI) RequestArrivals(
 }
 
 // https://api.bart.gov/docs/sched/depart.aspx
-func (a *SchedulesAPI) RequestDepartures(
-	orig string,
-	dest string,
-	time string,
-	date string,
-	before int,
-	after int,
-	legend bool,
-) (res TripsResponse, err error) {
-	params, err := processScheduleParams(orig, dest, time, date, before, after, legend)
+func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
+	params, err := p.validateMap()
 
 	if err != nil {
 		return res, err
@@ -291,39 +275,44 @@ type RouteSchedulesResponse struct {
 	}
 }
 
-func processScheduleParams(
-	orig, dest string,
-	time, date string,
-	before, after int,
-	legend bool,
-) (map[string]string, error) {
-	params := map[string]string{"orig": orig, "dest": dest}
+type TripParams struct {
+	Orig   string
+	Dest   string
+	Time   string
+	Date   string
+	Before int
+	After  int
+	Legend bool
+}
 
-	if time != "" {
-		params["time"] = time
+func (p TripParams) validateMap() (map[string]string, error) {
+	params := map[string]string{"orig": p.Orig, "dest": p.Dest}
+
+	if p.Time != "" {
+		params["time"] = p.Time
 	}
 
-	if date != "" {
-		params["date"] = date
+	if p.Date != "" {
+		params["date"] = p.Date
 	}
 
-	if before != 0 {
-		if b, e := validateBeforeAfter(before); e != nil {
+	if p.Before != 0 {
+		if b, e := validateBeforeAfter(p.Before); e != nil {
 			return params, e
 		} else {
 			params["b"] = string(b)
 		}
 	}
 
-	if after != 0 {
-		if a, e := validateBeforeAfter(after); e != nil {
+	if p.After != 0 {
+		if a, e := validateBeforeAfter(p.After); e != nil {
 			return params, e
 		} else {
 			params["a"] = string(a)
 		}
 	}
 
-	if legend {
+	if p.Legend {
 		params["l"] = "1"
 	}
 
