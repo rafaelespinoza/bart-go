@@ -312,6 +312,13 @@ func (p TripParams) validateMap() (map[string]string, error) {
 		params["date"] = p.Date
 	}
 
+	if p.Before == 0 && p.After == 0 {
+		// API would return an empty string for value at `TripsResponse.Root.Data.Request`
+		// in this case. I do not know how to handle that difference in type right now.
+		msg := "before and after params cannot both == 0."
+		return params, fmt.Errorf(msg)
+	}
+
 	before, err := validateBeforeAfter(p.Before)
 	if err != nil {
 		return params, err
