@@ -1,10 +1,12 @@
 package bart
 
+type StationsAPI struct{}
+
 // http://api.bart.gov/docs/stn/stnaccess.aspx
-func RequestStationAccess(orig string) (res StationAccessResponse, err error) {
+func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
 	params := map[string]string{"orig": orig}
 
-	err = RequestApi(
+	err = requestApi(
 		"/stn.aspx",
 		"stnaccess",
 		params,
@@ -18,33 +20,31 @@ type StationAccessResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data struct {
-			StationAccess `json:"Station"`
+			StationAccess struct {
+				Name            string
+				Abbr            string
+				Entering        CDATASection
+				Exiting         CDATASection
+				FillTime        CDATASection
+				CarShare        CDATASection
+				Lockers         CDATASection
+				BikeStationText CDATASection
+				Destinations    CDATASection
+				Link            string
+				ParkingFlag     boolish `json:"@parking_flag,string"`
+				BikeFlag        boolish `json:"@bike_flag,string"`
+				BikeStation     boolish `json:"@bike_station_flag,string"`
+				LockerFlag      boolish `json:"@locker_flag,string"`
+			} `json:"Station"`
 		} `json:"Stations"`
 	}
 }
 
-type StationAccess struct {
-	Name            string
-	Abbr            string
-	Entering        cDataSection
-	Exiting         cDataSection
-	FillTime        cDataSection
-	CarShare        cDataSection
-	Lockers         cDataSection
-	BikeStationText cDataSection
-	Destinations    cDataSection
-	Link            string
-	ParkingFlag     boolish `json:"@parking_flag,string"`
-	BikeFlag        boolish `json:"@bike_flag,string"`
-	BikeStation     boolish `json:"@bike_station_flag,string"`
-	LockerFlag      boolish `json:"@locker_flag,string"`
-}
-
 // http://api.bart.gov/docs/stn/stninfo.aspx
-func RequestStationInfo(orig string) (res StationInfoResponse, err error) {
+func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
 	params := map[string]string{"orig": orig}
 
-	err = RequestApi(
+	err = requestApi(
 		"/stn.aspx",
 		"stninfo",
 		params,
@@ -58,39 +58,37 @@ type StationInfoResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data struct {
-			StationInfo `json:"Station"`
+			StationInfo struct {
+				Name           string
+				Abbr           string
+				Latitude       float32 `json:"gtfs_latitude,string"`
+				Longitude      float32 `json:"gtfs_longitude,string"`
+				Address        string
+				City           string
+				County         string
+				State          string
+				ZipCode        string
+				NorthRoutes    struct{ Route []string }    `json:"north_routes"`
+				SouthRoutes    struct{ Route []string }    `json:"south_routes"`
+				NorthPlatforms struct{ Platform []string } `json:"north_platforms"`
+				SouthPlatforms struct{ Platform []string } `json:"south_platforms"`
+				PlatformInfo   string                      `json:"platform_info"`
+				Intro          CDATASection
+				CrossStreet    CDATASection `json:"cross_street"`
+				Food           CDATASection
+				Shopping       CDATASection
+				Attraction     CDATASection
+				Link           CDATASection
+			} `json:"Station"`
 		} `json:"Stations"`
 	}
 }
 
-type StationInfo struct {
-	Name           string
-	Abbr           string
-	Latitude       float32 `json:"gtfs_latitude,string"`
-	Longitude      float32 `json:"gtfs_longitude,string"`
-	Address        string
-	City           string
-	County         string
-	State          string
-	ZipCode        string
-	NorthRoutes    struct{ Route []string }    `json:"north_routes"`
-	SouthRoutes    struct{ Route []string }    `json:"south_routes"`
-	NorthPlatforms struct{ Platform []string } `json:"north_platforms"` // TODO: interpret as []int
-	SouthPlatforms struct{ Platform []string } `json:"south_platforms"` // TODO: interpret as []int
-	PlatformInfo   string                      `json:"platform_info"`
-	Intro          cDataSection
-	CrossStreet    cDataSection `json:"cross_street"`
-	Food           cDataSection
-	Shopping       cDataSection
-	Attraction     cDataSection
-	Link           cDataSection
-}
-
 // http://api.bart.gov/docs/stn/stns.aspx
-func RequestStations() (res StationsResponse, err error) {
+func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
 	params := map[string]string{}
 
-	err = RequestApi(
+	err = requestApi(
 		"/stn.aspx",
 		"stns",
 		params,
@@ -103,18 +101,18 @@ func RequestStations() (res StationsResponse, err error) {
 type StationsResponse struct {
 	Root struct {
 		ResponseMetaData
-		Data struct{ Station []Station } `json:"Stations"`
+		Data struct {
+			List []struct {
+				Name      string
+				Abbr      string
+				Latitude  float32 `json:"gtfs_latitude,string"`
+				Longitude float32 `json:"gtfs_longitude,string"`
+				Address   string
+				City      string
+				County    string
+				State     string
+				ZipCode   string
+			} `json:"station"`
+		} `json:"stations"`
 	}
-}
-
-type Station struct {
-	Name      string
-	Abbr      string
-	Latitude  float32 `json:"gtfs_latitude,string"`
-	Longitude float32 `json:"gtfs_longitude,string"`
-	Address   string
-	City      string
-	County    string
-	State     string
-	ZipCode   string
 }

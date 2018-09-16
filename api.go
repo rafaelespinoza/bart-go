@@ -13,19 +13,27 @@ const (
 	apiKey  = "MW9S-E7SL-26DU-VV8V"
 )
 
+type Client struct {
+	*AdvisoriesAPI
+	*EstimatesAPI
+	*RoutesAPI
+	*SchedulesAPI
+	*StationsAPI
+}
+
 type ResponseMetaData struct {
-	Uri     cDataSection
+	URI     CDATASection
 	Date    string      `json:",omitempty"`
 	Time    string      `json:",omitempty"`
 	Message interface{} `json:",omitempty"`
 }
 
-type cDataSection struct {
+type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func RequestApi(route, cmd string, params map[string]string, res interface{}) error {
-	uri := prepareRequestUri(route, cmd, params)
+func requestApi(route, cmd string, params map[string]string, res interface{}) error {
+	uri := prepareRequestURI(route, cmd, params)
 	fmt.Printf("fetching %s\n", uri)
 
 	raw, err := newGetReq(&http.Client{}, uri)
@@ -36,7 +44,7 @@ func RequestApi(route, cmd string, params map[string]string, res interface{}) er
 	return json.Unmarshal(raw, res)
 }
 
-func prepareRequestUri(route, cmd string, params map[string]string) string {
+func prepareRequestURI(route, cmd string, params map[string]string) string {
 	qs := reqParams{cmd, params}
 	return baseUrl + route + "?" + qs.encode()
 }

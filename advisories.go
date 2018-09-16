@@ -1,10 +1,12 @@
 package bart
 
+type AdvisoriesAPI struct{}
+
 // http://api.bart.gov/docs/bsa/bsa.aspx
-func RequestAdvisoryService() (res AdvisoryBsaResponse, err error) {
+func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/bsa.aspx",
 		"bsa",
 		params,
@@ -14,24 +16,22 @@ func RequestAdvisoryService() (res AdvisoryBsaResponse, err error) {
 	return
 }
 
-type AdvisoryBsaResponse struct {
+type AdvisoriesBSAResponse struct {
 	Root struct {
 		ResponseMetaData
-		Data []Bsa `json:"Bsa"`
+		Data []struct {
+			Description CDATASection
+			Type        string
+			Posted      string
+		}
 	}
 }
 
-type Bsa struct {
-	Description cDataSection
-	Type        string
-	Posted      string
-}
-
 // http://api.bart.gov/docs/bsa/elev.aspx
-func RequestAdvisoryElevator() (res AdvisoryElevatorResponse, err error) {
+func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/bsa.aspx",
 		"elev",
 		params,
@@ -41,26 +41,24 @@ func RequestAdvisoryElevator() (res AdvisoryElevatorResponse, err error) {
 	return
 }
 
-type AdvisoryElevatorResponse struct {
+type AdvisoriesElevatorResponse struct {
 	Root struct {
 		ResponseMetaData
-		Data []ElevatorAdvisory `json:"Bsa"`
+		Data []struct {
+			Station     string
+			Type        string
+			Description CDATASection
+			Posted      string
+			Expires     string
+		} `json:"bsa"`
 	}
 }
 
-type ElevatorAdvisory struct {
-	Station     string
-	Type        string
-	Description cDataSection
-	Posted      string
-	Expires     string
-}
-
 // http://api.bart.gov/docs/bsa/count.aspx
-func RequestAdvisoryTrainCount() (res AdvisoryTrainCountResponse, err error) {
+func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/bsa.aspx",
 		"count",
 		params,
@@ -70,7 +68,7 @@ func RequestAdvisoryTrainCount() (res AdvisoryTrainCountResponse, err error) {
 	return
 }
 
-type AdvisoryTrainCountResponse struct {
+type AdvisoriesTrainCountResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data int `json:"TrainCount,string"`

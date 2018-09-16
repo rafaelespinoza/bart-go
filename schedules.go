@@ -5,20 +5,25 @@ import (
 	"strconv"
 )
 
+type SchedulesAPI struct{}
+
 // https://api.bart.gov/docs/sched/arrive.aspx
-func RequestSchedInfoArrival(
-	orig, dest string,
-	time, date string,
-	before, after int,
+func (a *SchedulesAPI) RequestArrivals(
+	orig string,
+	dest string,
+	time string,
+	date string,
+	before int,
+	after int,
 	legend bool,
-) (res SchedInfoTripResponse, err error) {
+) (res TripsResponse, err error) {
 	params, err := processScheduleParams(orig, dest, time, date, before, after, legend)
 
 	if err != nil {
 		return res, err
 	}
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"arrive",
 		params,
@@ -29,19 +34,22 @@ func RequestSchedInfoArrival(
 }
 
 // https://api.bart.gov/docs/sched/depart.aspx
-func RequestSchedInfoDeparture(
-	orig, dest string,
-	time, date string,
-	before, after int,
+func (a *SchedulesAPI) RequestDepartures(
+	orig string,
+	dest string,
+	time string,
+	date string,
+	before int,
+	after int,
 	legend bool,
-) (res SchedInfoTripResponse, err error) {
+) (res TripsResponse, err error) {
 	params, err := processScheduleParams(orig, dest, time, date, before, after, legend)
 
 	if err != nil {
 		return res, err
 	}
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"depart",
 		params,
@@ -51,46 +59,40 @@ func RequestSchedInfoDeparture(
 	return
 }
 
-type SchedInfoTripResponse struct {
+type TripsResponse struct {
 	Root struct {
 		ResponseMetaData
 		Message struct {
-			Co2_emissions cDataSection
+			Co2_emissions CDATASection
 			Legend        string `json:",omitempty"`
 		}
 		Origin      string
 		Destination string
-		SchedNum    int      `json:"sched_num,string"`
-		Data        Schedule `json:"schedule"`
+		SchedNum    int `json:"sched_num,string"`
+		Data        struct {
+			Date    string
+			Time    string
+			Before  int `json:",string"`
+			After   int `json:",string"`
+			Request struct {
+				List []struct {
+					OrigDestTimeData
+					TripTime int `json:"@tripTime,string"`
+					Legs     []struct {
+						Order        int    `json:"@order,string"`
+						TransferCode string `json:"@transfercode"`
+						OrigDestTimeData
+						Line             string  `json:"@line"`
+						BikeFlag         boolish `json:"@bikeflag,string"`
+						TrainHeadStation string  `json:"@trainHeadStation"`
+						Load             int     `json:"@load,string"`
+						TrainId          string  `json:"@trainId"`
+						TrainIdx         int     `json:"@trainIdx,string"`
+					} `json:"leg"`
+				} `json:"Trip"`
+			}
+		} `json:"schedule"`
 	}
-}
-
-type Schedule struct {
-	Date    string
-	Time    string
-	Before  int `json:",string"`
-	After   int `json:",string"`
-	Request struct {
-		List []Trip `json:"Trip"`
-	}
-}
-
-type Trip struct {
-	OrigDestTimeData
-	TripTime int       `json:"@tripTime,string"`
-	Legs     []TripLeg `json:"leg"`
-}
-
-type TripLeg struct {
-	Order        int    `json:"@order,string"`
-	TransferCode string `json:"@transfercode"`
-	OrigDestTimeData
-	Line             string  `json:"@line"`
-	BikeFlag         boolish `json:"@bikeflag,string"`
-	TrainHeadStation string  `json:"@trainHeadStation"`
-	Load             int     `json:"@load,string"`
-	TrainId          string  `json:"@trainId"`
-	TrainIdx         int     `json:"@trainIdx,string"`
 }
 
 type OrigDestTimeData struct {
@@ -103,10 +105,10 @@ type OrigDestTimeData struct {
 }
 
 // https://api.bart.gov/docs/sched/holiday.aspx
-func RequestSchedInfoHolidaySchedule() (res SchedInfoHolidayScheduleResponse, err error) {
+func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"holiday",
 		params,
@@ -116,26 +118,24 @@ func RequestSchedInfoHolidaySchedule() (res SchedInfoHolidayScheduleResponse, er
 	return
 }
 
-type SchedInfoHolidayScheduleResponse struct {
+type HolidaySchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data []struct {
-			List []Holiday `json:"holiday"`
+			List []struct {
+				Name         string
+				Date         string
+				ScheduleType string `json:"schedule_type"`
+			} `json:"holiday"`
 		} `json:"holidays"`
 	}
 }
 
-type Holiday struct {
-	Name         string
-	Date         string
-	ScheduleType string `json:"schedule_type"`
-}
-
 // https://api.bart.gov/docs/sched/scheds.aspx
-func RequestSchedInfoSchedules() (res SchedInfoSchedulesResponse, err error) {
+func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"scheds",
 		params,
@@ -145,25 +145,23 @@ func RequestSchedInfoSchedules() (res SchedInfoSchedulesResponse, err error) {
 	return
 }
 
-type SchedInfoSchedulesResponse struct {
+type AvailableSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data struct {
-			List []ScheduleEdition `json:"schedule"`
+			List []struct {
+				Id            int    `json:"@id,string"`
+				EffectiveDate string `json:"@effectivedate"`
+			} `json:"schedule"`
 		} `json:"schedules"`
 	}
 }
 
-type ScheduleEdition struct {
-	Id            int    `json:"@id,string"`
-	EffectiveDate string `json:"@effectivedate"`
-}
-
 // https://api.bart.gov/docs/sched/special.aspx
-func RequestSchedInfoSpecialSchedules() (res SchedInfoSpecialSchedulesResponse, err error) {
+func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"special",
 		params,
@@ -173,36 +171,34 @@ func RequestSchedInfoSpecialSchedules() (res SchedInfoSpecialSchedulesResponse, 
 	return
 }
 
-type SchedInfoSpecialSchedulesResponse struct {
+type SpecialSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
 		Data struct {
-			List []SpecialSchedule `json:"special_schedule"`
+			List []struct {
+				StartDate      string `json:"start_date"`
+				EndDate        string `json:"end_date"`
+				StartTime      string `json:"start_time"`
+				EndTime        string `json:"end_time"`
+				Text           CDATASection
+				Link           CDATASection
+				Orig           string
+				Dest           string
+				DayOfWeek      string `json:"day_of_week"`
+				RoutesAffected string `json:"routes_affected"`
+			} `json:"special_schedule"`
 		} `json:"special_schedules"`
 	}
 }
 
-type SpecialSchedule struct {
-	StartDate      string `json:"start_date"`
-	EndDate        string `json:"end_date"`
-	StartTime      string `json:"start_time"`
-	EndTime        string `json:"end_time"`
-	Text           cDataSection
-	Link           cDataSection
-	Orig           string
-	Dest           string
-	DayOfWeek      string `json:"day_of_week"`
-	RoutesAffected string `json:"routes_affected"`
-}
-
 // https://api.bart.gov/docs/sched/stnsched.aspx
-func RequestSchedInfoStationSchedule(orig, date string) (res SchedInfoStationScheduleResponse, err error) {
+func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
 	params := map[string]string{"orig": orig}
 	if date != "" {
 		params["date"] = date
 	}
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"stnsched",
 		params,
@@ -212,35 +208,35 @@ func RequestSchedInfoStationSchedule(orig, date string) (res SchedInfoStationSch
 	return
 }
 
-type SchedInfoStationScheduleResponse struct {
+type StationSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
 		SchedNum int `json:"sched_num,string"`
 		Data     struct {
 			Name string
 			Abbr string
-			List []StationSchedule `json:"item"`
+			List []struct {
+				Line             string  `json:"@line"`
+				TrainHeadStation string  `json:"@trainHeadStation"`
+				OrigTime         string  `json:"@origTime"`
+				DestTime         string  `json:"@destTime"`
+				TrainIdx         int     `json:"@trainIdx,string"`
+				BikeFlag         boolish `json:"@bikeflag,string"`
+				TrainId          string  `json:"@trainId"`
+				Load             int     `json:"@load,string"`
+			} `json:"item"`
 		} `json:"station"`
 	}
 }
 
-type StationSchedule struct {
-	Line             string  `json:"@line"`
-	TrainHeadStation string  `json:"@trainHeadStation"`
-	OrigTime         string  `json:"@origTime"`
-	DestTime         string  `json:"@destTime"`
-	TrainIdx         int     `json:"@trainIdx,string"`
-	BikeFlag         boolish `json:"@bikeflag,string"`
-	TrainId          string  `json:"@trainId"`
-	Load             int     `json:"@load,string"`
-}
-
 // https://api.bart.gov/docs/sched/routesched.aspx
-func RequestSchedInfoRouteSchedule(
-	route, sched int,
-	date, time string,
+func (a *SchedulesAPI) RequestRouteSchedules(
+	route int,
+	sched int,
+	date string,
+	time string,
 	legend bool,
-) (res SchedInfoRouteScheduleResponse, err error) {
+) (res RouteSchedulesResponse, err error) {
 	params := map[string]string{"route": strconv.Itoa(route)}
 
 	if sched != 0 {
@@ -265,7 +261,7 @@ func RequestSchedInfoRouteSchedule(
 		params["l"] = "1"
 	}
 
-	err = RequestApi(
+	err = requestApi(
 		"/sched.aspx",
 		"routesched",
 		params,
@@ -275,28 +271,24 @@ func RequestSchedInfoRouteSchedule(
 	return
 }
 
-type SchedInfoRouteScheduleResponse struct {
+type RouteSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
 		SchedNum int `json:"sched_num,string"`
 		Data     struct {
-			List []TrainSchedule `json:"train"`
+			List []struct {
+				TrainId  string `json:"@trainId"`
+				TrainIdx int    `json:"@trainIdx,string"`
+				Index    int    `json:"@index,string"`
+				Stops    []struct {
+					Station  string  `json:"@station"`
+					Load     string  `json:"@load"`
+					Level    string  `json:"@level"`
+					BikeFlag boolish `json:"@bikeflag,string"`
+				} `json:"stop"`
+			} `json:"train"`
 		} `json:"route"`
 	}
-}
-
-type TrainSchedule struct {
-	TrainId  string      `json:"@trainId"`
-	TrainIdx int         `json:"@trainIdx,string"`
-	Index    int         `json:"@index,string"`
-	Stops    []TrainStop `json:"stop"`
-}
-
-type TrainStop struct {
-	Station  string  `json:"@station"`
-	Load     string  `json:"@load"`
-	Level    string  `json:"@level"`
-	BikeFlag boolish `json:"@bikeflag,string"`
 }
 
 func processScheduleParams(

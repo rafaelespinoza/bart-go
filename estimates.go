@@ -6,13 +6,15 @@ import (
 	"strings"
 )
 
+type EstimatesAPI struct{}
+
 var (
 	validPlatforms  = []string{"1", "2", "3", "4"}
 	validDirections = []string{"N", "n", "S", "s"}
 )
 
 // https://api.bart.gov/docs/etd/etd.aspx
-func RequestEstimate(orig, plat, dir string) (res EstimateResponse, err error) {
+func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
 	params := map[string]string{"orig": orig}
 	allOrigins := strings.ToLower(orig) == "all"
 
@@ -30,7 +32,7 @@ func RequestEstimate(orig, plat, dir string) (res EstimateResponse, err error) {
 		}
 	}
 
-	err = RequestApi(
+	err = requestApi(
 		"/etd.aspx",
 		"etd",
 		params,
@@ -40,35 +42,29 @@ func RequestEstimate(orig, plat, dir string) (res EstimateResponse, err error) {
 	return
 }
 
-type EstimateResponse struct {
+type EstimatesResponse struct {
 	Root struct {
 		ResponseMetaData
-		Data []EstimateStation `json:"Station"`
+		Data []struct {
+			Name string
+			Abbr string
+			Etds []struct {
+				Destination  string
+				Abbreviation string
+				Limited      string
+				Estimates    []struct {
+					Minutes   estiMinute `json:",string"`
+					Platform  int        `json:",string"`
+					Direction string
+					Length    int `json:",string"`
+					Color     string
+					Hexcolor  string
+					BikeFlag  boolish `json:",string"`
+					Delay     int     `json:",string"`
+				} `json:"estimate"`
+			} `json:"etd"`
+		} `json:"station"`
 	}
-}
-
-type EstimateStation struct {
-	Name string
-	Abbr string
-	Etds []Etd `json:"etd"`
-}
-
-type Etd struct {
-	Destination  string
-	Abbreviation string
-	Limited      string
-	Estimates    []Estimate `json:"estimate"`
-}
-
-type Estimate struct {
-	Minutes   estiMinute `json:",string"`
-	Platform  int        `json:",string"`
-	Direction string
-	Length    int `json:",string"`
-	Color     string
-	Hexcolor  string
-	BikeFlag  boolish `json:",string"`
-	Delay     int     `json:",string"`
 }
 
 type estiMinute int
