@@ -18,6 +18,10 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 	params := map[string]string{"orig": orig}
 	allOrigins := strings.ToLower(orig) == "all"
 
+	if _, err := validateStationAbbr(orig); !allOrigins && err != nil {
+		return res, err
+	}
+
 	if !allOrigins && plat != "" {
 		if p, e := validatePlatform(plat); e != nil {
 			return res, e

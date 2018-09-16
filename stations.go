@@ -1,9 +1,18 @@
 package bart
 
+import (
+	"fmt"
+	"strings"
+)
+
 type StationsAPI struct{}
 
 // http://api.bart.gov/docs/stn/stnaccess.aspx
 func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
+	if _, e := validateStationAbbr(orig); e != nil {
+		return res, e
+	}
+
 	params := map[string]string{"orig": orig}
 
 	err = requestApi(
@@ -42,6 +51,10 @@ type StationAccessResponse struct {
 
 // http://api.bart.gov/docs/stn/stninfo.aspx
 func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
+	if _, e := validateStationAbbr(orig); e != nil {
+		return res, e
+	}
+
 	params := map[string]string{"orig": orig}
 
 	err = requestApi(
@@ -114,5 +127,66 @@ type StationsResponse struct {
 				ZipCode   string
 			} `json:"station"`
 		} `json:"stations"`
+	}
+}
+
+var stationAbbrs = map[string]bool{
+	"12TH": true,
+	"16TH": true,
+	"19TH": true,
+	"24TH": true,
+	"ANTC": true,
+	"ASHB": true,
+	"BALB": true,
+	"BAYF": true,
+	"CAST": true,
+	"CIVC": true,
+	"COLM": true,
+	"COLS": true,
+	"CONC": true,
+	"DALY": true,
+	"DBRK": true,
+	"DELN": true,
+	"DUBL": true,
+	"EMBR": true,
+	"FRMT": true,
+	"FTVL": true,
+	"GLEN": true,
+	"HAYW": true,
+	"LAFY": true,
+	"LAKE": true,
+	"MCAR": true,
+	"MLBR": true,
+	"MONT": true,
+	"NBRK": true,
+	"NCON": true,
+	"OAKL": true,
+	"ORIN": true,
+	"PCTR": true,
+	"PHIL": true,
+	"PITT": true,
+	"PLZA": true,
+	"POWL": true,
+	"RICH": true,
+	"ROCK": true,
+	"SANL": true,
+	"SBRN": true,
+	"SFIA": true,
+	"SHAY": true,
+	"SSAN": true,
+	"UCTY": true,
+	"WARM": true,
+	"WCRK": true,
+	"WDUB": true,
+	"WOAK": true,
+}
+
+func validateStationAbbr(s string) (string, error) {
+	u := strings.ToUpper(s)
+
+	if _, ok := stationAbbrs[u]; ok {
+		return s, nil
+	} else {
+		return "", fmt.Errorf("%q not a valid station abbreviation.", s)
 	}
 }

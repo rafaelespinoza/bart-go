@@ -177,6 +177,10 @@ type SpecialSchedulesResponse struct {
 
 // https://api.bart.gov/docs/sched/stnsched.aspx
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
+	if _, err := validateStationAbbr(orig); err != nil {
+		return res, err
+	}
+
 	params := map[string]string{"orig": orig}
 	if date != "" {
 		params["date"] = date
@@ -286,7 +290,19 @@ type TripParams struct {
 }
 
 func (p TripParams) validateMap() (map[string]string, error) {
-	params := map[string]string{"orig": p.Orig, "dest": p.Dest}
+	params := map[string]string{}
+
+	orig, err := validateStationAbbr(p.Orig)
+	if err != nil {
+		return params, err
+	}
+	params["orig"] = orig
+
+	dest, err := validateStationAbbr(p.Dest)
+	if err != nil {
+		return params, err
+	}
+	params["dest"] = dest
 
 	if p.Time != "" {
 		params["time"] = p.Time
@@ -296,21 +312,17 @@ func (p TripParams) validateMap() (map[string]string, error) {
 		params["date"] = p.Date
 	}
 
-	if p.Before != 0 {
-		if b, e := validateBeforeAfter(p.Before); e != nil {
-			return params, e
-		} else {
-			params["b"] = string(b)
-		}
+	before, err := validateBeforeAfter(p.Before)
+	if err != nil {
+		return params, err
 	}
+	params["b"] = strconv.Itoa(before)
 
-	if p.After != 0 {
-		if a, e := validateBeforeAfter(p.After); e != nil {
-			return params, e
-		} else {
-			params["a"] = string(a)
-		}
+	after, err := validateBeforeAfter(p.After)
+	if err != nil {
+		return params, err
 	}
+	params["a"] = strconv.Itoa(after)
 
 	if p.Legend {
 		params["l"] = "1"
