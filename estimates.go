@@ -23,20 +23,20 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 	}
 
 	if !allOrigins && plat != "" {
-		if p, e := validatePlatform(plat); e != nil {
+		p, e := validatePlatform(plat)
+		if e != nil {
 			return res, e
-		} else {
-			params["plat"] = p
 		}
+		params["plat"] = p
 	} else if !allOrigins && dir != "" {
-		if d, e := validateDir(dir); e != nil {
+		d, e := validateDir(dir)
+		if e != nil {
 			return res, e
-		} else {
-			params["dir"] = d
 		}
+		params["dir"] = d
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/etd.aspx",
 		"etd",
 		params,
@@ -81,28 +81,29 @@ func (m *estiMinute) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	if val, err := strconv.Atoi(str); err != nil {
+	val, err := strconv.Atoi(str)
+	if err != nil {
 		return err
-	} else {
-		*m = estiMinute(val)
-		return nil
 	}
+
+	*m = estiMinute(val)
+	return nil
 }
 
 func validatePlatform(plat string) (string, error) {
 	if isPresent(plat, validPlatforms) {
 		return plat, nil
-	} else {
-		err := fmt.Errorf("plat %q invalid. plat must be one of %v\n", plat, validPlatforms)
-		return "", err
 	}
+
+	err := fmt.Errorf("plat %q invalid, plat must be one of %v", plat, validPlatforms)
+	return "", err
 }
 
 func validateDir(dir string) (string, error) {
 	if isPresent(dir, validDirections) {
 		return dir, nil
-	} else {
-		err := fmt.Errorf("dir %q invalid. dir must be one of %v\n", dir, validDirections)
-		return "", err
 	}
+
+	err := fmt.Errorf("dir %q invalid. dir must be one of %v", dir, validDirections)
+	return "", err
 }

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	baseUrl = "http://api.bart.gov/api"
+	baseURL = "https://api.bart.gov/api"
 	apiKey  = "MW9S-E7SL-26DU-VV8V"
 )
 
@@ -32,7 +32,7 @@ type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func requestApi(route, cmd string, params map[string]string, res interface{}) error {
+func requestAPI(route, cmd string, params map[string]string, res interface{}) error {
 	uri := prepareRequestURI(route, cmd, params)
 	fmt.Printf("fetching %s\n", uri)
 
@@ -46,7 +46,7 @@ func requestApi(route, cmd string, params map[string]string, res interface{}) er
 
 func prepareRequestURI(route, cmd string, params map[string]string) string {
 	qs := reqParams{cmd, params}
-	return baseUrl + route + "?" + qs.encode()
+	return baseURL + route + "?" + qs.encode()
 }
 
 func newGetReq(c *http.Client, uri string) ([]byte, error) {

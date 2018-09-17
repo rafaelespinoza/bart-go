@@ -15,7 +15,7 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 		return res, err
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"arrive",
 		params,
@@ -33,7 +33,7 @@ func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err e
 		return res, err
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"depart",
 		params,
@@ -47,8 +47,8 @@ type TripsResponse struct {
 	Root struct {
 		ResponseMetaData
 		Message struct {
-			Co2_emissions CDATASection
-			Legend        string `json:",omitempty"`
+			CO2Emissions CDATASection `json:"co2_emissions"`
+			Legend       string       `json:",omitempty"`
 		}
 		Origin      string
 		Destination string
@@ -70,7 +70,7 @@ type TripsResponse struct {
 						BikeFlag         boolish `json:"@bikeflag,string"`
 						TrainHeadStation string  `json:"@trainHeadStation"`
 						Load             int     `json:"@load,string"`
-						TrainId          string  `json:"@trainId"`
+						TrainID          string  `json:"@trainId"`
 						TrainIdx         int     `json:"@trainIdx,string"`
 					} `json:"leg"`
 				} `json:"Trip"`
@@ -92,7 +92,7 @@ type OrigDestTimeData struct {
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"holiday",
 		params,
@@ -119,7 +119,7 @@ type HolidaySchedulesResponse struct {
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"scheds",
 		params,
@@ -134,7 +134,7 @@ type AvailableSchedulesResponse struct {
 		ResponseMetaData
 		Data struct {
 			List []struct {
-				Id            int    `json:"@id,string"`
+				ID            int    `json:"@id,string"`
 				EffectiveDate string `json:"@effectivedate"`
 			} `json:"schedule"`
 		} `json:"schedules"`
@@ -145,7 +145,7 @@ type AvailableSchedulesResponse struct {
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"special",
 		params,
@@ -186,7 +186,7 @@ func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSc
 		params["date"] = date
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"stnsched",
 		params,
@@ -210,7 +210,7 @@ type StationSchedulesResponse struct {
 				DestTime         string  `json:"@destTime"`
 				TrainIdx         int     `json:"@trainIdx,string"`
 				BikeFlag         boolish `json:"@bikeflag,string"`
-				TrainId          string  `json:"@trainId"`
+				TrainID          string  `json:"@trainId"`
 				Load             int     `json:"@load,string"`
 			} `json:"item"`
 		} `json:"station"`
@@ -228,17 +228,17 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 	params := map[string]string{"route": strconv.Itoa(route)}
 
 	if sched != 0 {
-		if s, e := validateRouteSchedNum(sched); e != nil {
-			return res, e
-		} else {
-			params["sched"] = string(s)
+		s, err := validateRouteSchedNum(sched)
+		if err != nil {
+			return res, err
 		}
+		params["sched"] = string(s)
 	} else if date != "" {
-		if d, e := validateRouteSchedDate(date); e != nil {
-			return res, e
-		} else {
-			params["date"] = d
+		d, err := validateRouteSchedDate(date)
+		if err != nil {
+			return res, err
 		}
+		params["date"] = d
 	}
 
 	if time != "" {
@@ -249,7 +249,7 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 		params["l"] = "1"
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/sched.aspx",
 		"routesched",
 		params,
@@ -265,7 +265,7 @@ type RouteSchedulesResponse struct {
 		SchedNum int `json:"sched_num,string"`
 		Data     struct {
 			List []struct {
-				TrainId  string `json:"@trainId"`
+				TrainID  string `json:"@trainId"`
 				TrainIdx int    `json:"@trainIdx,string"`
 				Index    int    `json:"@index,string"`
 				Stops    []struct {
@@ -315,8 +315,7 @@ func (p TripParams) validateMap() (map[string]string, error) {
 	if p.Before == 0 && p.After == 0 {
 		// API would return an empty string for value at `TripsResponse.Root.Data.Request`
 		// in this case. I do not know how to handle that difference in type right now.
-		msg := "before and after params cannot both == 0."
-		return params, fmt.Errorf(msg)
+		return params, fmt.Errorf("before and after params cannot both == 0")
 	}
 
 	before, err := validateBeforeAfter(p.Before)
@@ -340,12 +339,10 @@ func (p TripParams) validateMap() (map[string]string, error) {
 
 func validateBeforeAfter(val int) (int, error) {
 	if val < 0 || val > 4 {
-		msg := "value %d invalid. param 'before' or 'after' must be >= 0 && <= 4\n"
-		err := fmt.Errorf(msg, val)
+		err := fmt.Errorf("value %d invalid. param 'before' or 'after' must be >= 0 && <= 4", val)
 		return 0, err
-	} else {
-		return val, nil
 	}
+	return val, nil
 }
 
 func validateRouteSchedNum(sched int) (int, error) {

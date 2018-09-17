@@ -9,12 +9,12 @@ type boolish bool
 func (b *boolish) UnmarshalJSON(data []byte) error {
 	str := string(data)
 
-	if val, err := strconv.ParseBool(str); err == nil {
-		*b = boolish(val)
-		return nil
-	} else {
+	val, err := strconv.ParseBool(str)
+	if err != nil {
 		return err
 	}
+	*b = boolish(val)
+	return nil
 }
 
 func isPresent(target string, data []string) bool {

@@ -12,7 +12,7 @@ func (a *RoutesAPI) RequestRoutesInfo(sched, date string) (res RoutesInfoRespons
 		params["date"] = date
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/route.aspx",
 		"routeinfo",
 		params,
@@ -30,7 +30,7 @@ type RoutesInfoResponse struct {
 			List []struct {
 				Name        string
 				Abbr        string
-				RouteId     string
+				RouteID     string
 				Number      int `json:",string"`
 				Origin      string
 				Destination string
@@ -57,7 +57,7 @@ func (a *RoutesAPI) RequestRoutes(sched, date string) (res RoutesResponse, err e
 		params["date"] = date
 	}
 
-	err = requestApi(
+	err = requestAPI(
 		"/route.aspx",
 		"routes",
 		params,
@@ -75,7 +75,7 @@ type RoutesResponse struct {
 			List []struct {
 				Name     string
 				Abbr     string
-				RouteId  string
+				RouteID  string
 				Number   int `json:",string"`
 				Hexcolor string
 				Color    string

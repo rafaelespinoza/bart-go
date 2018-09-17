@@ -15,7 +15,7 @@ func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessRespon
 
 	params := map[string]string{"orig": orig}
 
-	err = requestApi(
+	err = requestAPI(
 		"/stn.aspx",
 		"stnaccess",
 		params,
@@ -57,7 +57,7 @@ func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, 
 
 	params := map[string]string{"orig": orig}
 
-	err = requestApi(
+	err = requestAPI(
 		"/stn.aspx",
 		"stninfo",
 		params,
@@ -101,7 +101,7 @@ type StationInfoResponse struct {
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
 	params := map[string]string{}
 
-	err = requestApi(
+	err = requestAPI(
 		"/stn.aspx",
 		"stns",
 		params,
@@ -186,7 +186,6 @@ func validateStationAbbr(s string) (string, error) {
 
 	if _, ok := stationAbbrs[u]; ok {
 		return s, nil
-	} else {
-		return "", fmt.Errorf("%q not a valid station abbreviation.", s)
 	}
+	return "", fmt.Errorf("%q not a valid station abbreviation", s)
 }

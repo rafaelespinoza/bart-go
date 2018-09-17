@@ -6,7 +6,7 @@ type AdvisoriesAPI struct{}
 func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/bsa.aspx",
 		"bsa",
 		params,
@@ -31,7 +31,7 @@ type AdvisoriesBSAResponse struct {
 func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/bsa.aspx",
 		"elev",
 		params,
@@ -58,7 +58,7 @@ type AdvisoriesElevatorResponse struct {
 func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
 	params := make(map[string]string)
 
-	err = requestApi(
+	err = requestAPI(
 		"/bsa.aspx",
 		"count",
 		params,
