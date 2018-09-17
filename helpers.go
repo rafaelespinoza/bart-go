@@ -1,3 +1,6 @@
+// Package bart is a wrapper for the BART API. It works with JSON, which is
+// still in beta at the time of this writing. See the official BART docs for
+// information https://api.bart.gov/docs/overview/index.aspx
 package bart
 
 import (

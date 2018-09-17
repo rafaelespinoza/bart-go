@@ -5,9 +5,13 @@ import (
 	"strconv"
 )
 
+// SchedulesAPI is a namespace for schedule information requests to routes at /sched.aspx. See official docs at
+// https://api.bart.gov/docs/sched/.
 type SchedulesAPI struct{}
 
-// https://api.bart.gov/docs/sched/arrive.aspx
+// RequestArrivals requests a trip plan based on arriving by the specified time. Inputs are specified in the TripParams
+// type. See that type's documentation for details on requesting an arrival. See official docs at
+// https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
 	params, err := p.validateMap()
 
@@ -25,7 +29,9 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 	return
 }
 
-// https://api.bart.gov/docs/sched/depart.aspx
+// RequestDepartures requests a trip plan based on departing by the specified time. Inputs are specified in the
+// TripParams type. See that type's documentation for details on requesting a departure. See official docs at
+// https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
 	params, err := p.validateMap()
 
@@ -43,6 +49,7 @@ func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err e
 	return
 }
 
+// TripsResponse is the shape of an API response.
 type TripsResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -79,6 +86,7 @@ type TripsResponse struct {
 	}
 }
 
+// OrigDestTimeData is an internal helper container, only meant to DRY up some type definitions.
 type OrigDestTimeData struct {
 	Origin       string `json:"@origin"`
 	Destination  string `json:"@destination"`
@@ -88,7 +96,8 @@ type OrigDestTimeData struct {
 	DestTimeDate string `json:"@destTimeDate"`
 }
 
-// https://api.bart.gov/docs/sched/holiday.aspx
+// RequestHolidaySchedules requests information on the upcoming BART holidays, and what type of schedule will be run on
+// those days. https://api.bart.gov/docs/sched/holiday.aspx.
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
 	params := make(map[string]string)
 
@@ -102,6 +111,7 @@ func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, 
 	return
 }
 
+// HolidaySchedulesResponse is the shape of an API response.
 type HolidaySchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -115,7 +125,8 @@ type HolidaySchedulesResponse struct {
 	}
 }
 
-// https://api.bart.gov/docs/sched/scheds.aspx
+// RequestAvailableSchedules requests information about the currently available schedules. See official docs at
+// https://api.bart.gov/docs/sched/scheds.aspx.
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
 	params := make(map[string]string)
 
@@ -129,6 +140,7 @@ func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesRespon
 	return
 }
 
+// AvailableSchedulesResponse is the shape of an API response.
 type AvailableSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -141,7 +153,8 @@ type AvailableSchedulesResponse struct {
 	}
 }
 
-// https://api.bart.gov/docs/sched/special.aspx
+// RequestSpecialSchedules requests information about all special schedule notices in effect. See official docs at
+// https://api.bart.gov/docs/sched/special.aspx.
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
 	params := make(map[string]string)
 
@@ -155,6 +168,7 @@ func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, 
 	return
 }
 
+// SpecialSchedulesResponse is the shape of an API response.
 type SpecialSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -175,7 +189,10 @@ type SpecialSchedulesResponse struct {
 	}
 }
 
-// https://api.bart.gov/docs/sched/stnsched.aspx
+// RequestStationSchedules requests an entire daily schedule for the particular station specified. The orig param must
+// be a 4-letter abbreviation for a station name. To request a schedule for a specific date, pass in a date formatted as
+// "mm/dd/yy". Otherwise you can pass in "" to get today's schedule. See official docs at
+// https://api.bart.gov/docs/sched/stnsched.aspx.
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
 	if _, err := validateStationAbbr(orig); err != nil {
 		return res, err
@@ -196,6 +213,7 @@ func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSc
 	return
 }
 
+// StationSchedulesResponse is the shape of an API response.
 type StationSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -217,7 +235,10 @@ type StationSchedulesResponse struct {
 	}
 }
 
-// https://api.bart.gov/docs/sched/routesched.aspx
+// RequestRouteSchedules requests a full schedule for the specified route. Values for the route param must be one of
+// 1-8, 11-12 or 19-20. Other inputs to this method default to the current values for current schedule today. To request
+// specific details, such as the schedule on a certain day or another edition of the schedule pass in non-zero values as
+// needed. See official docs at https://api.bart.gov/docs/sched/routesched.aspx.
 func (a *SchedulesAPI) RequestRouteSchedules(
 	route int,
 	sched int,
@@ -259,6 +280,7 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 	return
 }
 
+// RouteSchedulesResponse is the shape of an API response.
 type RouteSchedulesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -279,6 +301,12 @@ type RouteSchedulesResponse struct {
 	}
 }
 
+// TripParams is a helper for two methods: RequestArrivals, RequestDepartures. It is used to manage inputs for those
+// methods and to perform validation. The Orig and Dest fields are required and must be a 4-letter abbreviation for a
+// station name.  Passing in zero-values for both Before, After params is not allowed, however you can pass a zero-value
+// to one or the other. Details on the formatting of Time, Date params can be found in the official BART API docs. Most
+// of the time you'd want to use the zero-value for Time, Data params anyways so you can fallback to the current time
+// and current date.
 type TripParams struct {
 	Orig   string
 	Dest   string

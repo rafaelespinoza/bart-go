@@ -1,8 +1,12 @@
 package bart
 
+// RoutesAPI is a namespace for route information requests to routes at /route.aspx. See official
+// docs at https://api.bart.gov/docs/route/.
 type RoutesAPI struct{}
 
-// http://api.bart.gov/docs/route/routeinfo.aspx
+// RequestRoutesInfo requests detailed information for all routes. You probably want to request the current schedule on
+// the current date, so pass in empty values for sched, date inputs. Details on the format of those inputs are in
+// official docs. See official docs at https://api.bart.gov/docs/route/routeinfo.aspx.
 func (a *RoutesAPI) RequestRoutesInfo(sched, date string) (res RoutesInfoResponse, err error) {
 	params := map[string]string{"route": "all"}
 	if sched != "" {
@@ -22,6 +26,7 @@ func (a *RoutesAPI) RequestRoutesInfo(sched, date string) (res RoutesInfoRespons
 	return
 }
 
+// RoutesInfoResponse is the shape of an API response.
 type RoutesInfoResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -47,7 +52,8 @@ type RoutesInfoResponse struct {
 	}
 }
 
-// http://api.bart.gov/docs/route/routes.aspx
+// RequestRoutes requests (less) detailed information on current routes. If you only want current schedule on current
+// date, just pass empty strings for the sched, date inputs. See official docs at https://api.bart.gov/docs/route/routes.aspx.
 func (a *RoutesAPI) RequestRoutes(sched, date string) (res RoutesResponse, err error) {
 	params := map[string]string{}
 	if sched != "" {
@@ -67,6 +73,7 @@ func (a *RoutesAPI) RequestRoutes(sched, date string) (res RoutesResponse, err e
 	return
 }
 
+// RoutesResponse is the shape of an API response.
 type RoutesResponse struct {
 	Root struct {
 		ResponseMetaData

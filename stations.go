@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
+// StationsAPI is a namespace for stations information requests to routes at /stn.aspx. See official docs at
+// https://api.bart.gov/docs/stn/.
 type StationsAPI struct{}
 
-// http://api.bart.gov/docs/stn/stnaccess.aspx
+// RequestStationAccess requests detailed information how to access the specified station as well as information about
+// the neighborhood around the station. Pass in a 4-letter abbreviation for a station as the orig param. See official
+// docs at https://api.bart.gov/docs/stn/stnaccess.aspx.
 func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
 	if _, e := validateStationAbbr(orig); e != nil {
 		return res, e
@@ -25,6 +29,7 @@ func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessRespon
 	return
 }
 
+// StationAccessResponse is the shape of an API response.
 type StationAccessResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -49,7 +54,8 @@ type StationAccessResponse struct {
 	}
 }
 
-// http://api.bart.gov/docs/stn/stninfo.aspx
+// RequestStationInfo provides a detailed information about the specified station. Pass in a 4-letter abbreviation for a
+// station as the orig param. See official docs at https://api.bart.gov/docs/stn/stninfo.aspx.
 func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
 	if _, e := validateStationAbbr(orig); e != nil {
 		return res, e
@@ -67,6 +73,7 @@ func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, 
 	return
 }
 
+// StationInfoResponse is the shape of an API response.
 type StationInfoResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -97,7 +104,8 @@ type StationInfoResponse struct {
 	}
 }
 
-// http://api.bart.gov/docs/stn/stns.aspx
+// RequestStations provides a list of all available stations. See official docs at
+// https://api.bart.gov/docs/stn/stns.aspx.
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
 	params := map[string]string{}
 
@@ -111,6 +119,7 @@ func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
 	return
 }
 
+// StationsResponse is the shape of an API response.
 type StationsResponse struct {
 	Root struct {
 		ResponseMetaData

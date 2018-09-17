@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// EstimatesAPI is a namespace for real-time information requests to /etd.aspx. See official docs at
+// https://api.bart.gov/docs/etd/.
 type EstimatesAPI struct{}
 
 var (
@@ -13,7 +15,10 @@ var (
 	validDirections = []string{"N", "n", "S", "s"}
 )
 
-// https://api.bart.gov/docs/etd/etd.aspx
+// RequestETD requests estimated departure time for specified station. The orig param must be a 4-letter abbreviation
+// for a station name. Specify plat "1", "2", "3", "4" for a specific platform, or an empty string for all platforms.
+// Specify dir "n" for north, "s" for south, or you can pass empty string to get both directions.  See official docs at
+// https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
 	params := map[string]string{"orig": orig}
 	allOrigins := strings.ToLower(orig) == "all"
@@ -46,6 +51,9 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 	return
 }
 
+// EstimatesResponse is the shape of an API response. One field, under the Estimates key is of the private type,
+// estiMinute. It's there because zero-value is not "0", but "Leaving". To make it easier to deserialize, this package
+// aliases "Leaving" to int 0.
 type EstimatesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -57,7 +65,7 @@ type EstimatesResponse struct {
 				Abbreviation string
 				Limited      string
 				Estimates    []struct {
-					Minutes   estiMinute `json:",string"`
+					Minutes   estiMinute `json:",string"` // effectively an int. Exists b/c "Leaving" == 0
 					Platform  int        `json:",string"`
 					Direction string
 					Length    int `json:",string"`

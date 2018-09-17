@@ -1,8 +1,10 @@
 package bart
 
+// AdvisoriesAPI is a namespace for advisory information requests to routes at /bsa.aspx. See official docs at
+// https://api.bart.gov/docs/bsa/.
 type AdvisoriesAPI struct{}
 
-// http://api.bart.gov/docs/bsa/bsa.aspx
+// RequestBSA requests current advisory information. See official docs at https://api.bart.gov/docs/bsa/bsa.aspx.
 func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	params := make(map[string]string)
 
@@ -16,6 +18,7 @@ func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	return
 }
 
+// AdvisoriesBSAResponse is the shape of an API response.
 type AdvisoriesBSAResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -27,7 +30,8 @@ type AdvisoriesBSAResponse struct {
 	}
 }
 
-// http://api.bart.gov/docs/bsa/elev.aspx
+// RequestElevator requests current elevator status information. See official docs at
+// https://api.bart.gov/docs/bsa/elev.aspx.
 func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
 	params := make(map[string]string)
 
@@ -41,6 +45,7 @@ func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err e
 	return
 }
 
+// AdvisoriesElevatorResponse is the shape of an API response.
 type AdvisoriesElevatorResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -54,7 +59,8 @@ type AdvisoriesElevatorResponse struct {
 	}
 }
 
-// http://api.bart.gov/docs/bsa/count.aspx
+// RequestTrainCount requests the number of trains currently active in the system. See official docs
+// at: https://api.bart.gov/docs/bsa/count.aspx.
 func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
 	params := make(map[string]string)
 
@@ -68,6 +74,7 @@ func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, e
 	return
 }
 
+// AdvisoriesTrainCountResponse is the shape of an API response.
 type AdvisoriesTrainCountResponse struct {
 	Root struct {
 		ResponseMetaData

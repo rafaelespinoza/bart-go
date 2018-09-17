@@ -13,6 +13,7 @@ const (
 	apiKey  = "MW9S-E7SL-26DU-VV8V"
 )
 
+// Client gives you easy access to several BART API endpoints. See examples for general usage.
 type Client struct {
 	*AdvisoriesAPI
 	*EstimatesAPI
@@ -21,6 +22,7 @@ type Client struct {
 	*StationsAPI
 }
 
+// ResponseMetaData is contains some data about the response. Not all of the fields are filled by every API endpoint.
 type ResponseMetaData struct {
 	URI     CDATASection
 	Date    string      `json:",omitempty"`
@@ -28,6 +30,9 @@ type ResponseMetaData struct {
 	Message interface{} `json:",omitempty"`
 }
 
+// CDATASection is merely a helper for unmarshaling certain fields. The original BART API has long returned XML
+// instead of JSON, and its presence is an artifact of BART's output conversion. This type is meant for internal use
+// and is only exported for documentation purposes since it shows up in so many other type definitions in this package.
 type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
