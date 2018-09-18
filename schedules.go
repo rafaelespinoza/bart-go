@@ -191,7 +191,7 @@ type SpecialSchedulesResponse struct {
 
 // RequestStationSchedules requests an entire daily schedule for the particular station specified. The orig param must
 // be a 4-letter abbreviation for a station name. To request a schedule for a specific date, pass in a date formatted as
-// "mm/dd/yy". Otherwise you can pass in "" to get today's schedule. See official docs at
+// "mm/dd/yyyy". Otherwise you can pass in "" to get today's schedule. See official docs at
 // https://api.bart.gov/docs/sched/stnsched.aspx.
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
 	if _, err := validateStationAbbr(orig); err != nil {
@@ -241,20 +241,13 @@ type StationSchedulesResponse struct {
 // needed. See official docs at https://api.bart.gov/docs/sched/routesched.aspx.
 func (a *SchedulesAPI) RequestRouteSchedules(
 	route int,
-	sched int,
 	date string,
 	time string,
 	legend bool,
 ) (res RouteSchedulesResponse, err error) {
 	params := map[string]string{"route": strconv.Itoa(route)}
 
-	if sched != 0 {
-		s, err := validateRouteSchedNum(sched)
-		if err != nil {
-			return res, err
-		}
-		params["sched"] = string(s)
-	} else if date != "" {
+	if date != "" {
 		d, err := validateRouteSchedDate(date)
 		if err != nil {
 			return res, err
@@ -371,11 +364,6 @@ func validateBeforeAfter(val int) (int, error) {
 		return 0, err
 	}
 	return val, nil
-}
-
-func validateRouteSchedNum(sched int) (int, error) {
-	// TODO: should be > 40, BART doesn't seem to have published schedules before 41
-	return sched, nil
 }
 
 func validateRouteSchedDate(date string) (string, error) {

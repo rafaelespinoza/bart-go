@@ -5,13 +5,10 @@ package bart
 type RoutesAPI struct{}
 
 // RequestRoutesInfo requests detailed information for all routes. You probably want to request the current schedule on
-// the current date, so pass in empty values for sched, date inputs. Details on the format of those inputs are in
-// official docs. See official docs at https://api.bart.gov/docs/route/routeinfo.aspx.
-func (a *RoutesAPI) RequestRoutesInfo(sched, date string) (res RoutesInfoResponse, err error) {
+// the current date, so pass in "" for date. Otherwise, format like "mm/dd/yyyy". See official docs at
+// https://api.bart.gov/docs/route/routeinfo.aspx.
+func (a *RoutesAPI) RequestRoutesInfo(date string) (res RoutesInfoResponse, err error) {
 	params := map[string]string{"route": "all"}
-	if sched != "" {
-		params["sched"] = sched
-	}
 	if date != "" {
 		params["date"] = date
 	}
@@ -53,12 +50,9 @@ type RoutesInfoResponse struct {
 }
 
 // RequestRoutes requests (less) detailed information on current routes. If you only want current schedule on current
-// date, just pass empty strings for the sched, date inputs. See official docs at https://api.bart.gov/docs/route/routes.aspx.
-func (a *RoutesAPI) RequestRoutes(sched, date string) (res RoutesResponse, err error) {
+// date, just pass empty strings for date. See official docs at https://api.bart.gov/docs/route/routes.aspx.
+func (a *RoutesAPI) RequestRoutes(date string) (res RoutesResponse, err error) {
 	params := map[string]string{}
-	if sched != "" {
-		params["sched"] = sched
-	}
 	if date != "" {
 		params["date"] = date
 	}
