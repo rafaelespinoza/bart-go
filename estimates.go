@@ -20,26 +20,64 @@ var (
 // Specify dir "n" for north, "s" for south, or you can pass empty string to get both directions.  See official docs at
 // https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
-	params := map[string]string{"orig": orig}
+	params, err := NewEstimateParams(orig, plat, dir)
+	if err != nil {
+		return
+	}
+
+	err = requestAPI(
+		"/etd.aspx",
+		"etd",
+		params.toMap(),
+		&res,
+	)
+
+	return
+}
+
+type EstimateParams struct {
+	Orig string
+	Plat string
+	Dir  string
+}
+
+func NewEstimateParams(orig, plat, dir string) (*EstimateParams, error) {
+	var ep EstimateParams
+
 	allOrigins := strings.ToLower(orig) == "all"
 
 	if _, err := validateStationAbbr(orig); !allOrigins && err != nil {
-		return res, err
+		return &ep, err
 	}
+	ep.Orig = orig
 
 	if !allOrigins && plat != "" {
 		p, e := validatePlatform(plat)
 		if e != nil {
-			return res, e
+			return &ep, e
 		}
-		params["plat"] = p
+		ep.Plat = p
 	} else if !allOrigins && dir != "" {
 		d, e := validateDir(dir)
 		if e != nil {
-			return res, e
+			return &ep, e
 		}
-		params["dir"] = d
+		ep.Dir = d
 	}
+
+	return &ep, nil
+}
+
+func (p EstimateParams) toMap() map[string]string {
+	return map[string]string{
+		"orig": p.Orig,
+		"plat": p.Plat,
+		"dir":  p.Dir,
+	}
+}
+
+func (a *EstimatesAPI) RequestEstimate(p EstimateParams) (res EstimatesResponse, err error) {
+	params := p.toMap()
 
 	err = requestAPI(
 		"/etd.aspx",
