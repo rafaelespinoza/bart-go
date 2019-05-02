@@ -48,7 +48,8 @@ func ExampleStationsAPI() {
 	res, err = c.StationsAPI.RequestStationAccess("mcar")
 	fmt.Println(res, err)
 
-	// be sure to pass in a valid station abbreviation. this example will return an error.
+	// be sure to pass in a valid station abbreviation. this example will return
+	// an error.
 	res, err = c.StationsAPI.RequestStationAccess("nope")
 	fmt.Println(res, err)
 
@@ -88,14 +89,16 @@ func ExampleSchedulesAPI() {
 	var res interface{}
 	var err error
 
-	// Use the quick planner to request departure from SF airport to Castro Valley station, at
-	// current date, departing now with 2 trips, before & after.
+	// Use the quick planner to request departure from SF airport to Castro
+	// Valley station, at current date, departing now with 2 trips, before &
+	// after.
 	departure := bart.TripParams{"sfia", "cast", "", "", 2, 2, true}
 	res, err = c.RequestDepartures(departure)
 	fmt.Println(res, err)
 
-	// Use the quick planner to request arrival from Embarcadero to Coliseum station, at
-	// current date, arriving at 6:30pm with 3 trips, before & after.
+	// Use the quick planner to request arrival from Embarcadero to Coliseum
+	// station, at current date, arriving at 6:30pm with 3 trips, before &
+	// after.
 	arrival := bart.TripParams{"embr", "cols", "", "6:30pm", 3, 3, true}
 	res, err = c.SchedulesAPI.RequestArrivals(arrival)
 	fmt.Println(res, err)

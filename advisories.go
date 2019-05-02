@@ -1,10 +1,11 @@
 package bart
 
-// AdvisoriesAPI is a namespace for advisory information requests to routes at /bsa.aspx. See official docs at
-// https://api.bart.gov/docs/bsa/.
+// AdvisoriesAPI is a namespace for advisory information requests to routes at
+// /bsa.aspx. See official docs at https://api.bart.gov/docs/bsa/.
 type AdvisoriesAPI struct{}
 
-// RequestBSA requests current advisory information. See official docs at https://api.bart.gov/docs/bsa/bsa.aspx.
+// RequestBSA requests current advisory information. See official docs at
+// https://api.bart.gov/docs/bsa/bsa.aspx.
 func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	params := make(map[string]string)
 
@@ -30,8 +31,8 @@ type AdvisoriesBSAResponse struct {
 	}
 }
 
-// RequestElevator requests current elevator status information. See official docs at
-// https://api.bart.gov/docs/bsa/elev.aspx.
+// RequestElevator requests current elevator status information. See official
+// docs at https://api.bart.gov/docs/bsa/elev.aspx.
 func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
 	params := make(map[string]string)
 
@@ -59,8 +60,8 @@ type AdvisoriesElevatorResponse struct {
 	}
 }
 
-// RequestTrainCount requests the number of trains currently active in the system. See official docs
-// at: https://api.bart.gov/docs/bsa/count.aspx.
+// RequestTrainCount requests the number of trains currently active in the
+// system. See official docs at: https://api.bart.gov/docs/bsa/count.aspx.
 func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
 	params := make(map[string]string)
 
