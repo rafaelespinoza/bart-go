@@ -2,16 +2,20 @@ package bart
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
-const (
-	baseURL = "https://api.bart.gov/api"
-	apiKey  = "MW9S-E7SL-26DU-VV8V"
-)
+const apiKey = "MW9S-E7SL-26DU-VV8V"
+
+// baseURL is the common part of the URL for any API request. It should only be
+// overridden for testing.
+var baseURL = "https://api.bart.gov/api"
+
+var httpClient = &http.Client{}
 
 // Client gives you easy access to several BART API endpoints. See examples for
 // general usage.
@@ -41,35 +45,46 @@ type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func requestAPI(route, cmd string, params map[string]string, res interface{}) error {
-	uri := prepareRequestURI(route, cmd, params)
-	fmt.Printf("fetching %s\n", uri)
+func requestAPI(route, cmd string, params map[string]string, out interface{}) (err error) {
+	var res *http.Response
 
-	raw, err := newGetReq(&http.Client{}, uri)
+	defer func() {
+		if res != nil && res.Body != nil {
+			res.Body.Close()
+		}
+	}()
+
+	qs := reqParams{cmd, params}
+	uri := baseURL + route + "?" + qs.encode()
+
+	res, err = httpClient.Get(uri)
 	if err != nil {
 		return err
 	}
 
-	return json.Unmarshal(raw, res)
-}
-
-func prepareRequestURI(route, cmd string, params map[string]string) string {
-	qs := reqParams{cmd, params}
-	return baseURL + route + "?" + qs.encode()
-}
-
-func newGetReq(c *http.Client, uri string) ([]byte, error) {
-	req, err := http.NewRequest("GET", uri, nil)
-
+	raw, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return []byte{}, err
+		return
 	}
 
-	res, err := c.Do(req)
-	defer res.Body.Close()
+	err = json.Unmarshal(raw, out)
+	if _, ok := (err).(*json.SyntaxError); ok {
+		// Handle any errors from the BART API that are formatted as XML. As of
+		// this writing, the JSON API format is in beta and they never got
+		// around to converting errors to JSON.
+		var xmlMessage struct {
+			Text    string `xml:"message>error>text"`
+			Details string `xml:"message>error>details"`
+		}
+		xmlParseErr := xml.Unmarshal(raw, &xmlMessage)
+		if xmlParseErr != nil {
+			err = xmlParseErr
+			return
+		}
+		err = fmt.Errorf("error: %s. %s", xmlMessage.Text, xmlMessage.Details)
+	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	return body, err
+	return
 }
 
 type reqParams struct {
