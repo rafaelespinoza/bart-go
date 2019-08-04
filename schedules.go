@@ -43,10 +43,7 @@ func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err e
 type TripsResponse struct {
 	Root struct {
 		ResponseMetaData
-		Message struct {
-			CO2Emissions CDATASection `json:"co2_emissions"`
-			Legend       string       `json:",omitempty"`
-		}
+		Message     interface{}
 		Origin      string
 		Destination string
 		SchedNum    int `json:"sched_num,string"`
@@ -60,15 +57,12 @@ type TripsResponse struct {
 					OrigDestTimeData
 					TripTime int `json:"@tripTime,string"`
 					Legs     []struct {
-						Order        int    `json:"@order,string"`
-						TransferCode string `json:"@transfercode"`
 						OrigDestTimeData
+						Order            int     `json:"@order,string"`
 						Line             string  `json:"@line"`
 						BikeFlag         boolish `json:"@bikeflag,string"`
 						TrainHeadStation string  `json:"@trainHeadStation"`
 						Load             int     `json:"@load,string"`
-						TrainID          string  `json:"@trainId"`
-						TrainIdx         int     `json:"@trainIdx,string"`
 					} `json:"leg"`
 				} `json:"Trip"`
 			}
