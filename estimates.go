@@ -1,19 +1,12 @@
 package bart
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 )
 
 // EstimatesAPI is a namespace for real-time information requests to /etd.aspx.
 // See official docs at https://api.bart.gov/docs/etd/.
 type EstimatesAPI struct{}
-
-var (
-	validPlatforms  = []string{"1", "2", "3", "4"}
-	validDirections = []string{"N", "n", "S", "s"}
-)
 
 // RequestETD requests estimated departure time for specified station. The orig
 // param must be a 4-letter abbreviation for a station name. Specify plat "1",
@@ -22,7 +15,11 @@ var (
 // both directions.  See official docs at
 // https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
-	params, err := NewEstimateParams(orig, plat, dir)
+	params := &EstimateParams{
+		Orig: orig,
+		Plat: plat,
+		Dir:  dir,
+	}
 	if err != nil {
 		return
 	}
@@ -47,39 +44,15 @@ type EstimateParams struct {
 	Dir  string
 }
 
-func NewEstimateParams(orig, plat, dir string) (*EstimateParams, error) {
-	var ep EstimateParams
-
-	allOrigins := strings.ToLower(orig) == "all"
-
-	if _, err := validateStationAbbr(orig); !allOrigins && err != nil {
-		return &ep, err
-	}
-	ep.Orig = orig
-
-	if !allOrigins && plat != "" {
-		p, e := validatePlatform(plat)
-		if e != nil {
-			return &ep, e
-		}
-		ep.Plat = p
-	} else if !allOrigins && dir != "" {
-		d, e := validateDir(dir)
-		if e != nil {
-			return &ep, e
-		}
-		ep.Dir = d
-	}
-
-	return &ep, nil
-}
-
 func (p EstimateParams) toMap() map[string]string {
-	return map[string]string{
-		"orig": p.Orig,
-		"plat": p.Plat,
-		"dir":  p.Dir,
+	params := map[string]string{"orig": p.Orig}
+	if p.Dir != "" {
+		params["dir"] = p.Dir
 	}
+	if p.Plat != "" {
+		params["plat"] = p.Plat
+	}
+	return params
 }
 
 // RequestEstimate requests estimated departures for a station. It's just like
@@ -144,22 +117,4 @@ func (m *estiMinute) UnmarshalJSON(data []byte) error {
 
 	*m = estiMinute(val)
 	return nil
-}
-
-func validatePlatform(plat string) (string, error) {
-	if isPresent(plat, validPlatforms) {
-		return plat, nil
-	}
-
-	err := fmt.Errorf("plat %q invalid, plat must be one of %v", plat, validPlatforms)
-	return "", err
-}
-
-func validateDir(dir string) (string, error) {
-	if isPresent(dir, validDirections) {
-		return dir, nil
-	}
-
-	err := fmt.Errorf("dir %q invalid. dir must be one of %v", dir, validDirections)
-	return "", err
 }

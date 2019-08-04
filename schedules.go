@@ -1,7 +1,6 @@
 package bart
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -14,7 +13,7 @@ type SchedulesAPI struct{}
 // for details on requesting an arrival. See official docs at
 // https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
-	params, err := p.validateMap()
+	params := p.toMap()
 
 	if err != nil {
 		return res, err
@@ -35,7 +34,7 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 // documentation for details on requesting a departure. See official docs at
 // https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
-	params, err := p.validateMap()
+	params := p.toMap()
 
 	if err != nil {
 		return res, err
@@ -200,10 +199,6 @@ type SpecialSchedulesResponse struct {
 // formatted as "mm/dd/yyyy". Otherwise you can pass in "" to get today's
 // schedule. See official docs at https://api.bart.gov/docs/sched/stnsched.aspx.
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
-	if _, err := validateStationAbbr(orig); err != nil {
-		return res, err
-	}
-
 	params := map[string]string{"orig": orig}
 	if date != "" {
 		params["date"] = date
@@ -256,17 +251,11 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 	params := map[string]string{"route": strconv.Itoa(route)}
 
 	if date != "" {
-		d, err := validateRouteSchedDate(date)
-		if err != nil {
-			return res, err
-		}
-		params["date"] = d
+		params["date"] = date
 	}
-
 	if time != "" {
 		params["time"] = time
 	}
-
 	if legend {
 		params["l"] = "1"
 	}
@@ -303,9 +292,8 @@ type RouteSchedulesResponse struct {
 }
 
 // TripParams is a helper for two methods: RequestArrivals, RequestDepartures.
-// It is used to manage inputs for those methods and to perform validation. The
-// Orig and Dest fields are required and must be a 4-letter abbreviation for a
-// station name. Passing in zero-values for both Before, After params is not
+// The Orig and Dest fields are required and must be a 4-letter abbreviation for
+// a station name. Passing in zero-values for both Before, After params is not
 // allowed, however you can pass a zero-value to one or the other. Details on
 // the formatting of Time, Date params can be found in the official BART API
 // docs. Most of the time you'd want to use the zero-value for Time, Data params
@@ -320,20 +308,11 @@ type TripParams struct {
 	Legend bool
 }
 
-func (p TripParams) validateMap() (map[string]string, error) {
-	params := map[string]string{}
-
-	orig, err := validateStationAbbr(p.Orig)
-	if err != nil {
-		return params, err
+func (p TripParams) toMap() map[string]string {
+	params := map[string]string{
+		"orig": p.Orig,
+		"dest": p.Dest,
 	}
-	params["orig"] = orig
-
-	dest, err := validateStationAbbr(p.Dest)
-	if err != nil {
-		return params, err
-	}
-	params["dest"] = dest
 
 	if p.Time != "" {
 		params["time"] = p.Time
@@ -343,40 +322,14 @@ func (p TripParams) validateMap() (map[string]string, error) {
 		params["date"] = p.Date
 	}
 
-	if p.Before == 0 && p.After == 0 {
-		// API would return an empty string for value at `TripsResponse.Root.Data.Request`
-		// in this case. I do not know how to handle that difference in type right now.
-		return params, fmt.Errorf("before and after params cannot both == 0")
-	}
-
-	before, err := validateBeforeAfter(p.Before)
-	if err != nil {
-		return params, err
-	}
-	params["b"] = strconv.Itoa(before)
-
-	after, err := validateBeforeAfter(p.After)
-	if err != nil {
-		return params, err
-	}
-	params["a"] = strconv.Itoa(after)
-
 	if p.Legend {
 		params["l"] = "1"
 	}
 
-	return params, nil
-}
+	// values for Before, After are fixed by BART API if they are outside of
+	// acceptable range.
+	params["b"] = strconv.Itoa(p.Before)
+	params["a"] = strconv.Itoa(p.After)
 
-func validateBeforeAfter(val int) (int, error) {
-	if val < 0 || val > 4 {
-		err := fmt.Errorf("value %d invalid. param 'before' or 'after' must be >= 0 && <= 4", val)
-		return 0, err
-	}
-	return val, nil
-}
-
-func validateRouteSchedDate(date string) (string, error) {
-	// TODO: validate format `mm/dd/yyyy` or `wd|sa|su`
-	return date, nil
+	return params
 }
