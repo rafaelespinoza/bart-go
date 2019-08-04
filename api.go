@@ -45,7 +45,7 @@ type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func requestAPI(route, cmd string, params map[string]string, out interface{}) (err error) {
+func requestAPI(route, cmd string, params *url.Values, out interface{}) (err error) {
 	var res *http.Response
 
 	defer func() {
@@ -54,8 +54,13 @@ func requestAPI(route, cmd string, params map[string]string, out interface{}) (e
 		}
 	}()
 
-	qs := reqParams{cmd, params}
-	uri := baseURL + route + "?" + qs.encode()
+	if params == nil {
+		params = &url.Values{}
+	}
+	params.Set("cmd", cmd)
+	params.Set("json", "y")
+	params.Set("key", apiKey)
+	uri := baseURL + route + "?" + params.Encode()
 
 	res, err = httpClient.Get(uri)
 	if err != nil {
@@ -85,22 +90,4 @@ func requestAPI(route, cmd string, params map[string]string, out interface{}) (e
 	}
 
 	return
-}
-
-type reqParams struct {
-	cmd   string
-	pairs map[string]string
-}
-
-func (p reqParams) encode() string {
-	qs := url.Values{}
-	qs.Add("cmd", p.cmd)
-	qs.Add("json", "y")
-	qs.Add("key", apiKey)
-
-	for k, v := range p.pairs {
-		qs.Add(k, v)
-	}
-
-	return qs.Encode()
 }

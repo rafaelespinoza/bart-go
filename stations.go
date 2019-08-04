@@ -1,5 +1,7 @@
 package bart
 
+import "net/url"
+
 // StationsAPI is a namespace for stations information requests to routes at
 // /stn.aspx. See official docs at https://api.bart.gov/docs/stn/.
 type StationsAPI struct{}
@@ -9,12 +11,13 @@ type StationsAPI struct{}
 // station. Pass in a 4-letter abbreviation for a station as the orig param. See
 // official docs at https://api.bart.gov/docs/stn/stnaccess.aspx.
 func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
-	params := map[string]string{"orig": orig}
+	params := url.Values{}
+	params.Set("orig", orig)
 
 	err = requestAPI(
 		"/stn.aspx",
 		"stnaccess",
-		params,
+		&params,
 		&res,
 	)
 
@@ -50,12 +53,13 @@ type StationAccessResponse struct {
 // station. Pass in a 4-letter abbreviation for a station as the orig param. See
 // official docs at https://api.bart.gov/docs/stn/stninfo.aspx.
 func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
-	params := map[string]string{"orig": orig}
+	params := url.Values{}
+	params.Set("orig", orig)
 
 	err = requestAPI(
 		"/stn.aspx",
 		"stninfo",
-		params,
+		&params,
 		&res,
 	)
 
@@ -96,12 +100,10 @@ type StationInfoResponse struct {
 // RequestStations provides a list of all available stations. See official docs
 // at https://api.bart.gov/docs/stn/stns.aspx.
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
-	params := map[string]string{}
-
 	err = requestAPI(
 		"/stn.aspx",
 		"stns",
-		params,
+		nil,
 		&res,
 	)
 

@@ -1,6 +1,7 @@
 package bart
 
 import (
+	"net/url"
 	"strconv"
 )
 
@@ -13,16 +14,10 @@ type SchedulesAPI struct{}
 // for details on requesting an arrival. See official docs at
 // https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
-	params := p.toMap()
-
-	if err != nil {
-		return res, err
-	}
-
 	err = requestAPI(
 		"/sched.aspx",
 		"arrive",
-		params,
+		p.toURLValues(),
 		&res,
 	)
 
@@ -34,16 +29,10 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 // documentation for details on requesting a departure. See official docs at
 // https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
-	params := p.toMap()
-
-	if err != nil {
-		return res, err
-	}
-
 	err = requestAPI(
 		"/sched.aspx",
 		"depart",
-		params,
+		p.toURLValues(),
 		&res,
 	)
 
@@ -102,12 +91,10 @@ type OrigDestTimeData struct {
 // and what type of schedule will be run on those days.
 // https://api.bart.gov/docs/sched/holiday.aspx.
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"holiday",
-		params,
+		nil,
 		&res,
 	)
 
@@ -131,12 +118,10 @@ type HolidaySchedulesResponse struct {
 // RequestAvailableSchedules requests information about the currently available
 // schedules. See official docs at https://api.bart.gov/docs/sched/scheds.aspx.
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"scheds",
-		params,
+		nil,
 		&res,
 	)
 
@@ -160,12 +145,10 @@ type AvailableSchedulesResponse struct {
 // notices in effect. See official docs at
 // https://api.bart.gov/docs/sched/special.aspx.
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"special",
-		params,
+		nil,
 		&res,
 	)
 
@@ -199,15 +182,16 @@ type SpecialSchedulesResponse struct {
 // formatted as "mm/dd/yyyy". Otherwise you can pass in "" to get today's
 // schedule. See official docs at https://api.bart.gov/docs/sched/stnsched.aspx.
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
-	params := map[string]string{"orig": orig}
+	params := url.Values{}
+	params.Set("orig", orig)
 	if date != "" {
-		params["date"] = date
+		params.Set("date", date)
 	}
 
 	err = requestAPI(
 		"/sched.aspx",
 		"stnsched",
-		params,
+		&params,
 		&res,
 	)
 
@@ -248,22 +232,23 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 	time string,
 	legend bool,
 ) (res RouteSchedulesResponse, err error) {
-	params := map[string]string{"route": strconv.Itoa(route)}
+	params := url.Values{}
+	params.Set("route", strconv.Itoa(route))
 
 	if date != "" {
-		params["date"] = date
+		params.Set("date", date)
 	}
 	if time != "" {
-		params["time"] = time
+		params.Set("time", time)
 	}
 	if legend {
-		params["l"] = "1"
+		params.Set("l", "1")
 	}
 
 	err = requestAPI(
 		"/sched.aspx",
 		"routesched",
-		params,
+		&params,
 		&res,
 	)
 
@@ -308,28 +293,27 @@ type TripParams struct {
 	Legend bool
 }
 
-func (p TripParams) toMap() map[string]string {
-	params := map[string]string{
-		"orig": p.Orig,
-		"dest": p.Dest,
-	}
+func (p *TripParams) toURLValues() *url.Values {
+	params := url.Values{}
+	params.Set("orig", p.Orig)
+	params.Set("dest", p.Dest)
 
 	if p.Time != "" {
-		params["time"] = p.Time
+		params.Set("time", p.Time)
 	}
 
 	if p.Date != "" {
-		params["date"] = p.Date
+		params.Set("date", p.Date)
 	}
 
 	if p.Legend {
-		params["l"] = "1"
+		params.Set("l", "1")
 	}
 
 	// values for Before, After are fixed by BART API if they are outside of
 	// acceptable range.
-	params["b"] = strconv.Itoa(p.Before)
-	params["a"] = strconv.Itoa(p.After)
+	params.Set("b", strconv.Itoa(p.Before))
+	params.Set("a", strconv.Itoa(p.After))
 
-	return params
+	return &params
 }

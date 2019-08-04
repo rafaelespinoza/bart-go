@@ -1,5 +1,7 @@
 package bart
 
+import "net/url"
+
 // RoutesAPI is a namespace for route information requests to routes at
 // /route.aspx. See official docs at https://api.bart.gov/docs/route/.
 type RoutesAPI struct{}
@@ -9,15 +11,16 @@ type RoutesAPI struct{}
 // date. Otherwise, format like "mm/dd/yyyy". See official docs at
 // https://api.bart.gov/docs/route/routeinfo.aspx.
 func (a *RoutesAPI) RequestRoutesInfo(date string) (res RoutesInfoResponse, err error) {
-	params := map[string]string{"route": "all"}
+	params := url.Values{}
+	params.Set("route", "all")
 	if date != "" {
-		params["date"] = date
+		params.Set("date", date)
 	}
 
 	err = requestAPI(
 		"/route.aspx",
 		"routeinfo",
-		params,
+		&params,
 		&res,
 	)
 
@@ -54,15 +57,15 @@ type RoutesInfoResponse struct {
 // only want current schedule on current date, just pass empty strings for date.
 // See official docs at https://api.bart.gov/docs/route/routes.aspx.
 func (a *RoutesAPI) RequestRoutes(date string) (res RoutesResponse, err error) {
-	params := map[string]string{}
+	params := url.Values{}
 	if date != "" {
-		params["date"] = date
+		params.Set("date", date)
 	}
 
 	err = requestAPI(
 		"/route.aspx",
 		"routes",
-		params,
+		&params,
 		&res,
 	)
 

@@ -1,6 +1,7 @@
 package bart
 
 import (
+	"net/url"
 	"strconv"
 )
 
@@ -20,14 +21,11 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 		Plat: plat,
 		Dir:  dir,
 	}
-	if err != nil {
-		return
-	}
 
 	err = requestAPI(
 		"/etd.aspx",
 		"etd",
-		params.toMap(),
+		params.toURLValues(),
 		&res,
 	)
 
@@ -44,22 +42,23 @@ type EstimateParams struct {
 	Dir  string
 }
 
-func (p EstimateParams) toMap() map[string]string {
-	params := map[string]string{"orig": p.Orig}
+func (p *EstimateParams) toURLValues() *url.Values {
+	params := url.Values{}
+	params.Set("orig", p.Orig)
 	if p.Dir != "" {
-		params["dir"] = p.Dir
+		params.Set("dir", p.Dir)
 	}
 	if p.Plat != "" {
-		params["plat"] = p.Plat
+		params.Set("plat", p.Plat)
 	}
-	return params
+	return &params
 }
 
 // RequestEstimate requests estimated departures for a station. It's just like
 // the RequestETD method except it takes an EstimateParams value. See official
 // docs at https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestEstimate(p EstimateParams) (res EstimatesResponse, err error) {
-	params := p.toMap()
+	params := p.toURLValues()
 
 	err = requestAPI(
 		"/etd.aspx",
