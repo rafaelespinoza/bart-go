@@ -11,14 +11,31 @@ func ExampleAdvisoriesAPI() {
 	var res interface{}
 	var err error
 
+	// Get current advisories.
 	res, err = c.AdvisoriesAPI.RequestBSA()
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	res, err = c.AdvisoriesAPI.RequestTrainCount()
-	fmt.Println(res, err)
-
+	// Get current elevator status.
 	res, err = c.AdvisoriesAPI.RequestElevator()
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Get number of trains currently active.
+	res, err = c.AdvisoriesAPI.RequestTrainCount()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Output:
+	// bart.AdvisoriesBSAResponse
+	// bart.AdvisoriesElevatorResponse
+	// bart.AdvisoriesTrainCountResponse
 }
 
 func ExampleRoutesAPI() {
@@ -26,17 +43,31 @@ func ExampleRoutesAPI() {
 	var res interface{}
 	var err error
 
-	// get route information based today's schedule
-	res, err = c.RoutesAPI.RequestRoutesInfo("")
-	fmt.Println(res, err)
-
-	// get route information based on specific date's schedule
-	res, err = c.RoutesAPI.RequestRoutesInfo("1/1/2018")
-	fmt.Println(res, err)
-
-	// get information on current routes
+	// Get information on current routes.
 	res, err = c.RoutesAPI.RequestRoutes("")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Get route information based today's schedule.
+	res, err = c.RoutesAPI.RequestRoutesInfo("")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Get route information based on specific date's schedule.
+	res, err = c.RoutesAPI.RequestRoutesInfo("1/1/2018")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Output:
+	// bart.RoutesResponse
+	// bart.RoutesInfoResponse
+	// bart.RoutesInfoResponse
 }
 
 func ExampleStationsAPI() {
@@ -44,22 +75,40 @@ func ExampleStationsAPI() {
 	var res interface{}
 	var err error
 
-	// request access information on MacArthur station
+	// Request access information on MacArthur station.
 	res, err = c.StationsAPI.RequestStationAccess("mcar")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// be sure to pass in a valid station abbreviation. this example will return
-	// an error.
+	// Invalid station inputs will return an error.
 	res, err = c.StationsAPI.RequestStationAccess("nope")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// get detailed info on a specific station
+	// Get detailed info on a specific station.
 	res, err = c.StationsAPI.RequestStationInfo("civc")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// get all the stations
+	// Get all the stations.
 	res, err = c.StationsAPI.RequestStations()
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Output:
+	// bart.StationAccessResponse
+	// error: Invalid orig. The orig station parameter NOPE is missing or invalid.
+	// bart.StationAccessResponse
+	// bart.StationInfoResponse
+	// bart.StationsResponse
 }
 
 func ExampleEstimatesAPI() {
@@ -67,21 +116,39 @@ func ExampleEstimatesAPI() {
 	var res interface{}
 	var err error
 
-	// get real-time estimates for all stations
+	// Get real-time estimates for all stations.
 	res, err = c.EstimatesAPI.RequestETD("ALL", "", "")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// get real-time estimates for one station, all platforms, directions
+	// Get real-time estimates for a station, all platforms, directions.
 	res, err = c.EstimatesAPI.RequestETD("cast", "", "")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// get real-time estimates for one station, specific platform, any direction
+	// Get real-time estimates for a station, specific platform, any direction.
 	res, err = c.EstimatesAPI.RequestETD("nbrk", "2", "")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// get real-time estimates for one station, any platform, specific direction
+	// Get real-time estimates for a station, any platform, specific direction.
 	res, err = c.EstimatesAPI.RequestETD("mcar", "", "S")
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Output:
+	// bart.EstimatesResponse
+	// bart.EstimatesResponse
+	// bart.EstimatesResponse
+	// bart.EstimatesResponse
 }
 
 func ExampleSchedulesAPI() {
@@ -89,44 +156,89 @@ func ExampleSchedulesAPI() {
 	var res interface{}
 	var err error
 
-	// Use the quick planner to request departure from SF airport to Castro
-	// Valley station, at current date, departing now with 2 trips, before &
-	// after.
-	departure := bart.TripParams{"sfia", "cast", "", "", 2, 2, true}
-	res, err = c.RequestDepartures(departure)
-	fmt.Println(res, err)
-
 	// Use the quick planner to request arrival from Embarcadero to Coliseum
 	// station, at current date, arriving at 6:30pm with 3 trips, before &
 	// after.
-	arrival := bart.TripParams{"embr", "cols", "", "6:30pm", 3, 3, true}
-	res, err = c.SchedulesAPI.RequestArrivals(arrival)
-	fmt.Println(res, err)
+	res, err = c.SchedulesAPI.RequestArrivals(bart.TripParams{
+		Orig:   "embr",
+		Dest:   "cols",
+		Time:   "6:30pm",
+		Date:   "",
+		Before: 3,
+		After:  3,
+		Legend: true,
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	res, err = c.RequestHolidaySchedules()
-	fmt.Println(res, err)
-
+	// Get currently available schedules.
 	res, err = c.RequestAvailableSchedules()
-	fmt.Println(res, err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	res, err = c.RequestSpecialSchedules()
-	fmt.Println(res, err)
+	// Use the quick planner to request departure from SF airport to Castro
+	// Valley station, at current date, departing now with 2 trips, before &
+	// after.
+	res, err = c.RequestDepartures(bart.TripParams{
+		Orig:   "sfia",
+		Dest:   "cast",
+		Time:   "",
+		Date:   "",
+		Before: 2,
+		After:  2,
+		Legend: true,
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// Get station schedules for current date.
-	res, err = c.RequestStationSchedules("mcar", "")
-	fmt.Println(res, err)
+	// Get info on upcoming BART holidays and what schedules run on those days.
+	res, err = c.RequestHolidaySchedules()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-	// Get station schedules for specific date.
-	res, err = c.RequestStationSchedules("glen", "9/16/2018")
-	fmt.Println(res, err)
-
-	// Request schedule for route 12, on a Saturday
+	// Request schedule for route 12, on a Saturday.
 	res, err = c.RequestRouteSchedules(12, "sa", "", true)
-	fmt.Println(res, err)
-}
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
 
-func ExampleTripParams() {
-	p := bart.TripParams{"sfia", "cast", "2:08pm", "09/16/2018", 1, 2, true}
-	fmt.Printf("%#v", p)
-	// Output: bart.TripParams{Orig:"sfia", Dest:"cast", Time:"2:08pm", Date:"09/16/2018", Before:1, After:2, Legend:true}
+	// Get special schedule notices in effect.
+	res, err = c.RequestSpecialSchedules()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Get a station's schedules for the current date.
+	res, err = c.RequestStationSchedules("mcar", "")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Get a station's schedules for specific date..
+	res, err = c.RequestStationSchedules("glen", "8/14/2018")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%T\n", res)
+
+	// Output:
+	// bart.TripsResponse
+	// bart.AvailableSchedulesResponse
+	// bart.TripsResponse
+	// bart.HolidaySchedulesResponse
+	// bart.RouteSchedulesResponse
+	// bart.SpecialSchedulesResponse
+	// bart.StationSchedulesResponse
+	// bart.StationSchedulesResponse
 }
