@@ -1,6 +1,7 @@
 package bart
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 )
@@ -167,6 +168,28 @@ type SpecialSchedulesResponse struct {
 				RoutesAffected string `json:"routes_affected"`
 			} `json:"special_schedule"`
 		} `json:"special_schedules"`
+	}
+}
+
+func (r *SpecialSchedulesResponse) UnmarshalJSON(in []byte) (err error) {
+	type specialSchedulesResponseJSON SpecialSchedulesResponse
+	var s specialSchedulesResponseJSON
+
+	err = json.Unmarshal(in, &s)
+	switch err.(type) {
+	case nil:
+		*r = SpecialSchedulesResponse{Root: s.Root}
+		return
+	case *json.UnmarshalTypeError:
+		// This is *probably* the case where Root.Data = "". In order to
+		// gracefully unmarshal the input, assume there's no useful data.
+		var t SpecialSchedulesResponse
+		t.Root.ResponseMetaData = s.Root.ResponseMetaData
+		*r = t
+		err = nil
+		return
+	default:
+		return
 	}
 }
 
