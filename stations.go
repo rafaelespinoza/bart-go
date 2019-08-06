@@ -1,28 +1,23 @@
 package bart
 
-import (
-	"fmt"
-	"strings"
-)
+import "net/url"
 
-// StationsAPI is a namespace for stations information requests to routes at /stn.aspx. See official docs at
-// https://api.bart.gov/docs/stn/.
+// StationsAPI is a namespace for stations information requests to routes at
+// /stn.aspx. See official docs at https://api.bart.gov/docs/stn/.
 type StationsAPI struct{}
 
-// RequestStationAccess requests detailed information how to access the specified station as well as information about
-// the neighborhood around the station. Pass in a 4-letter abbreviation for a station as the orig param. See official
-// docs at https://api.bart.gov/docs/stn/stnaccess.aspx.
+// RequestStationAccess requests detailed information how to access the
+// specified station as well as information about the neighborhood around the
+// station. Pass in a 4-letter abbreviation for a station as the orig param. See
+// official docs at https://api.bart.gov/docs/stn/stnaccess.aspx.
 func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
-	if _, e := validateStationAbbr(orig); e != nil {
-		return res, e
-	}
-
-	params := map[string]string{"orig": orig}
+	params := url.Values{}
+	params.Set("orig", orig)
 
 	err = requestAPI(
 		"/stn.aspx",
 		"stnaccess",
-		params,
+		&params,
 		&res,
 	)
 
@@ -54,19 +49,17 @@ type StationAccessResponse struct {
 	}
 }
 
-// RequestStationInfo provides a detailed information about the specified station. Pass in a 4-letter abbreviation for a
-// station as the orig param. See official docs at https://api.bart.gov/docs/stn/stninfo.aspx.
+// RequestStationInfo provides a detailed information about the specified
+// station. Pass in a 4-letter abbreviation for a station as the orig param. See
+// official docs at https://api.bart.gov/docs/stn/stninfo.aspx.
 func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
-	if _, e := validateStationAbbr(orig); e != nil {
-		return res, e
-	}
-
-	params := map[string]string{"orig": orig}
+	params := url.Values{}
+	params.Set("orig", orig)
 
 	err = requestAPI(
 		"/stn.aspx",
 		"stninfo",
-		params,
+		&params,
 		&res,
 	)
 
@@ -104,15 +97,13 @@ type StationInfoResponse struct {
 	}
 }
 
-// RequestStations provides a list of all available stations. See official docs at
-// https://api.bart.gov/docs/stn/stns.aspx.
+// RequestStations provides a list of all available stations. See official docs
+// at https://api.bart.gov/docs/stn/stns.aspx.
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
-	params := map[string]string{}
-
 	err = requestAPI(
 		"/stn.aspx",
 		"stns",
-		params,
+		nil,
 		&res,
 	)
 
@@ -137,64 +128,4 @@ type StationsResponse struct {
 			} `json:"station"`
 		} `json:"stations"`
 	}
-}
-
-var stationAbbrs = map[string]bool{
-	"12TH": true,
-	"16TH": true,
-	"19TH": true,
-	"24TH": true,
-	"ANTC": true,
-	"ASHB": true,
-	"BALB": true,
-	"BAYF": true,
-	"CAST": true,
-	"CIVC": true,
-	"COLM": true,
-	"COLS": true,
-	"CONC": true,
-	"DALY": true,
-	"DBRK": true,
-	"DELN": true,
-	"DUBL": true,
-	"EMBR": true,
-	"FRMT": true,
-	"FTVL": true,
-	"GLEN": true,
-	"HAYW": true,
-	"LAFY": true,
-	"LAKE": true,
-	"MCAR": true,
-	"MLBR": true,
-	"MONT": true,
-	"NBRK": true,
-	"NCON": true,
-	"OAKL": true,
-	"ORIN": true,
-	"PCTR": true,
-	"PHIL": true,
-	"PITT": true,
-	"PLZA": true,
-	"POWL": true,
-	"RICH": true,
-	"ROCK": true,
-	"SANL": true,
-	"SBRN": true,
-	"SFIA": true,
-	"SHAY": true,
-	"SSAN": true,
-	"UCTY": true,
-	"WARM": true,
-	"WCRK": true,
-	"WDUB": true,
-	"WOAK": true,
-}
-
-func validateStationAbbr(s string) (string, error) {
-	u := strings.ToUpper(s)
-
-	if _, ok := stationAbbrs[u]; ok {
-		return s, nil
-	}
-	return "", fmt.Errorf("%q not a valid station abbreviation", s)
 }

@@ -1,45 +1,64 @@
 package bart
 
 import (
-	"fmt"
+	"net/url"
 	"strconv"
-	"strings"
 )
 
-// EstimatesAPI is a namespace for real-time information requests to /etd.aspx. See official docs at
-// https://api.bart.gov/docs/etd/.
+// EstimatesAPI is a namespace for real-time information requests to /etd.aspx.
+// See official docs at https://api.bart.gov/docs/etd/.
 type EstimatesAPI struct{}
 
-var (
-	validPlatforms  = []string{"1", "2", "3", "4"}
-	validDirections = []string{"N", "n", "S", "s"}
-)
-
-// RequestETD requests estimated departure time for specified station. The orig param must be a 4-letter abbreviation
-// for a station name. Specify plat "1", "2", "3", "4" for a specific platform, or an empty string for all platforms.
-// Specify dir "n" for north, "s" for south, or you can pass empty string to get both directions.  See official docs at
+// RequestETD requests estimated departure time for specified station. The orig
+// param must be a 4-letter abbreviation for a station name. Specify plat "1",
+// "2", "3", "4" for a specific platform, or an empty string for all platforms.
+// Specify dir "n" for north, "s" for south, or you can pass empty string to get
+// both directions.  See official docs at
 // https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
-	params := map[string]string{"orig": orig}
-	allOrigins := strings.ToLower(orig) == "all"
-
-	if _, err := validateStationAbbr(orig); !allOrigins && err != nil {
-		return res, err
+	params := &EstimateParams{
+		Orig: orig,
+		Plat: plat,
+		Dir:  dir,
 	}
 
-	if !allOrigins && plat != "" {
-		p, e := validatePlatform(plat)
-		if e != nil {
-			return res, e
-		}
-		params["plat"] = p
-	} else if !allOrigins && dir != "" {
-		d, e := validateDir(dir)
-		if e != nil {
-			return res, e
-		}
-		params["dir"] = d
+	err = requestAPI(
+		"/etd.aspx",
+		"etd",
+		params.toURLValues(),
+		&res,
+	)
+
+	return
+}
+
+// An EstimateParams is a set of named parameters for requesting estimated
+// departures in real time. Orig should be the 4-letter abbreviation for the
+// name of the station. Plat should be "1", "2", "3", "4", or "all". Dir should
+// be "n" for North, "s" for South, or an empty string for both directions.
+type EstimateParams struct {
+	Orig string
+	Plat string
+	Dir  string
+}
+
+func (p *EstimateParams) toURLValues() *url.Values {
+	params := url.Values{}
+	params.Set("orig", p.Orig)
+	if p.Dir != "" {
+		params.Set("dir", p.Dir)
 	}
+	if p.Plat != "" {
+		params.Set("plat", p.Plat)
+	}
+	return &params
+}
+
+// RequestEstimate requests estimated departures for a station. It's just like
+// the RequestETD method except it takes an EstimateParams value. See official
+// docs at https://api.bart.gov/docs/etd/etd.aspx.
+func (a *EstimatesAPI) RequestEstimate(p EstimateParams) (res EstimatesResponse, err error) {
+	params := p.toURLValues()
 
 	err = requestAPI(
 		"/etd.aspx",
@@ -51,9 +70,10 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 	return
 }
 
-// EstimatesResponse is the shape of an API response. One field, under the Estimates key is of the private type,
-// estiMinute. It's there because zero-value is not "0", but "Leaving". To make it easier to deserialize, this package
-// aliases "Leaving" to int 0.
+// EstimatesResponse is the shape of an API response. One field, under the
+// Estimates key is of the private type, estiMinute. It's there because
+// zero-value is not "0", but "Leaving". To make it easier to deserialize, this
+// package aliases "Leaving" to int 0.
 type EstimatesResponse struct {
 	Root struct {
 		ResponseMetaData
@@ -96,22 +116,4 @@ func (m *estiMinute) UnmarshalJSON(data []byte) error {
 
 	*m = estiMinute(val)
 	return nil
-}
-
-func validatePlatform(plat string) (string, error) {
-	if isPresent(plat, validPlatforms) {
-		return plat, nil
-	}
-
-	err := fmt.Errorf("plat %q invalid, plat must be one of %v", plat, validPlatforms)
-	return "", err
-}
-
-func validateDir(dir string) (string, error) {
-	if isPresent(dir, validDirections) {
-		return dir, nil
-	}
-
-	err := fmt.Errorf("dir %q invalid. dir must be one of %v", dir, validDirections)
-	return "", err
 }

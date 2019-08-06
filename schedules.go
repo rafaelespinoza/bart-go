@@ -1,48 +1,39 @@
 package bart
 
 import (
-	"fmt"
+	"encoding/json"
+	"net/url"
 	"strconv"
 )
 
-// SchedulesAPI is a namespace for schedule information requests to routes at /sched.aspx. See official docs at
-// https://api.bart.gov/docs/sched/.
+// SchedulesAPI is a namespace for schedule information requests to routes at
+// /sched.aspx. See official docs at https://api.bart.gov/docs/sched/.
 type SchedulesAPI struct{}
 
-// RequestArrivals requests a trip plan based on arriving by the specified time. Inputs are specified in the TripParams
-// type. See that type's documentation for details on requesting an arrival. See official docs at
+// RequestArrivals requests a trip plan based on arriving by the specified time.
+// Inputs are specified in the TripParams type. See that type's documentation
+// for details on requesting an arrival. See official docs at
 // https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
-	params, err := p.validateMap()
-
-	if err != nil {
-		return res, err
-	}
-
 	err = requestAPI(
 		"/sched.aspx",
 		"arrive",
-		params,
+		p.toURLValues(),
 		&res,
 	)
 
 	return
 }
 
-// RequestDepartures requests a trip plan based on departing by the specified time. Inputs are specified in the
-// TripParams type. See that type's documentation for details on requesting a departure. See official docs at
+// RequestDepartures requests a trip plan based on departing by the specified
+// time. Inputs are specified in the TripParams type. See that type's
+// documentation for details on requesting a departure. See official docs at
 // https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
-	params, err := p.validateMap()
-
-	if err != nil {
-		return res, err
-	}
-
 	err = requestAPI(
 		"/sched.aspx",
 		"depart",
-		params,
+		p.toURLValues(),
 		&res,
 	)
 
@@ -53,10 +44,7 @@ func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err e
 type TripsResponse struct {
 	Root struct {
 		ResponseMetaData
-		Message struct {
-			CO2Emissions CDATASection `json:"co2_emissions"`
-			Legend       string       `json:",omitempty"`
-		}
+		Message     interface{}
 		Origin      string
 		Destination string
 		SchedNum    int `json:"sched_num,string"`
@@ -70,15 +58,12 @@ type TripsResponse struct {
 					OrigDestTimeData
 					TripTime int `json:"@tripTime,string"`
 					Legs     []struct {
-						Order        int    `json:"@order,string"`
-						TransferCode string `json:"@transfercode"`
 						OrigDestTimeData
+						Order            int     `json:"@order,string"`
 						Line             string  `json:"@line"`
 						BikeFlag         boolish `json:"@bikeflag,string"`
 						TrainHeadStation string  `json:"@trainHeadStation"`
 						Load             int     `json:"@load,string"`
-						TrainID          string  `json:"@trainId"`
-						TrainIdx         int     `json:"@trainIdx,string"`
 					} `json:"leg"`
 				} `json:"Trip"`
 			}
@@ -86,7 +71,8 @@ type TripsResponse struct {
 	}
 }
 
-// OrigDestTimeData is an internal helper container, only meant to DRY up some type definitions.
+// OrigDestTimeData is an internal helper container, only meant to DRY up some
+// type definitions.
 type OrigDestTimeData struct {
 	Origin       string `json:"@origin"`
 	Destination  string `json:"@destination"`
@@ -96,15 +82,14 @@ type OrigDestTimeData struct {
 	DestTimeDate string `json:"@destTimeDate"`
 }
 
-// RequestHolidaySchedules requests information on the upcoming BART holidays, and what type of schedule will be run on
-// those days. https://api.bart.gov/docs/sched/holiday.aspx.
+// RequestHolidaySchedules requests information on the upcoming BART holidays,
+// and what type of schedule will be run on those days.
+// https://api.bart.gov/docs/sched/holiday.aspx.
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"holiday",
-		params,
+		nil,
 		&res,
 	)
 
@@ -125,15 +110,13 @@ type HolidaySchedulesResponse struct {
 	}
 }
 
-// RequestAvailableSchedules requests information about the currently available schedules. See official docs at
-// https://api.bart.gov/docs/sched/scheds.aspx.
+// RequestAvailableSchedules requests information about the currently available
+// schedules. See official docs at https://api.bart.gov/docs/sched/scheds.aspx.
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"scheds",
-		params,
+		nil,
 		&res,
 	)
 
@@ -153,15 +136,14 @@ type AvailableSchedulesResponse struct {
 	}
 }
 
-// RequestSpecialSchedules requests information about all special schedule notices in effect. See official docs at
+// RequestSpecialSchedules requests information about all special schedule
+// notices in effect. See official docs at
 // https://api.bart.gov/docs/sched/special.aspx.
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
-	params := make(map[string]string)
-
 	err = requestAPI(
 		"/sched.aspx",
 		"special",
-		params,
+		nil,
 		&res,
 	)
 
@@ -189,24 +171,44 @@ type SpecialSchedulesResponse struct {
 	}
 }
 
-// RequestStationSchedules requests an entire daily schedule for the particular station specified. The orig param must
-// be a 4-letter abbreviation for a station name. To request a schedule for a specific date, pass in a date formatted as
-// "mm/dd/yyyy". Otherwise you can pass in "" to get today's schedule. See official docs at
-// https://api.bart.gov/docs/sched/stnsched.aspx.
-func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
-	if _, err := validateStationAbbr(orig); err != nil {
-		return res, err
-	}
+func (r *SpecialSchedulesResponse) UnmarshalJSON(in []byte) (err error) {
+	type specialSchedulesResponseJSON SpecialSchedulesResponse
+	var s specialSchedulesResponseJSON
 
-	params := map[string]string{"orig": orig}
+	err = json.Unmarshal(in, &s)
+	switch err.(type) {
+	case nil:
+		*r = SpecialSchedulesResponse{Root: s.Root}
+		return
+	case *json.UnmarshalTypeError:
+		// This is *probably* the case where Root.Data = "". In order to
+		// gracefully unmarshal the input, assume there's no useful data.
+		var t SpecialSchedulesResponse
+		t.Root.ResponseMetaData = s.Root.ResponseMetaData
+		*r = t
+		err = nil
+		return
+	default:
+		return
+	}
+}
+
+// RequestStationSchedules requests an entire daily schedule for the particular
+// station specified. The orig param must be a 4-letter abbreviation for a
+// station name. To request a schedule for a specific date, pass in a date
+// formatted as "mm/dd/yyyy". Otherwise you can pass in "" to get today's
+// schedule. See official docs at https://api.bart.gov/docs/sched/stnsched.aspx.
+func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
+	params := url.Values{}
+	params.Set("orig", orig)
 	if date != "" {
-		params["date"] = date
+		params.Set("date", date)
 	}
 
 	err = requestAPI(
 		"/sched.aspx",
 		"stnsched",
-		params,
+		&params,
 		&res,
 	)
 
@@ -235,38 +237,35 @@ type StationSchedulesResponse struct {
 	}
 }
 
-// RequestRouteSchedules requests a full schedule for the specified route. Values for the route param must be one of
-// 1-8, 11-12 or 19-20. Other inputs to this method default to the current values for current schedule today. To request
-// specific details, such as the schedule on a certain day or another edition of the schedule pass in non-zero values as
-// needed. See official docs at https://api.bart.gov/docs/sched/routesched.aspx.
+// RequestRouteSchedules requests a full schedule for the specified route.
+// Values for the route param must be one of 1-8, 11-12 or 19-20. Other inputs
+// to this method default to the current values for current schedule today. To
+// request specific details, such as the schedule on a certain day or another
+// edition of the schedule pass in non-zero values as needed. See official docs
+// at https://api.bart.gov/docs/sched/routesched.aspx.
 func (a *SchedulesAPI) RequestRouteSchedules(
 	route int,
 	date string,
 	time string,
 	legend bool,
 ) (res RouteSchedulesResponse, err error) {
-	params := map[string]string{"route": strconv.Itoa(route)}
+	params := url.Values{}
+	params.Set("route", strconv.Itoa(route))
 
 	if date != "" {
-		d, err := validateRouteSchedDate(date)
-		if err != nil {
-			return res, err
-		}
-		params["date"] = d
+		params.Set("date", date)
 	}
-
 	if time != "" {
-		params["time"] = time
+		params.Set("time", time)
 	}
-
 	if legend {
-		params["l"] = "1"
+		params.Set("l", "1")
 	}
 
 	err = requestAPI(
 		"/sched.aspx",
 		"routesched",
-		params,
+		&params,
 		&res,
 	)
 
@@ -294,12 +293,13 @@ type RouteSchedulesResponse struct {
 	}
 }
 
-// TripParams is a helper for two methods: RequestArrivals, RequestDepartures. It is used to manage inputs for those
-// methods and to perform validation. The Orig and Dest fields are required and must be a 4-letter abbreviation for a
-// station name.  Passing in zero-values for both Before, After params is not allowed, however you can pass a zero-value
-// to one or the other. Details on the formatting of Time, Date params can be found in the official BART API docs. Most
-// of the time you'd want to use the zero-value for Time, Data params anyways so you can fallback to the current time
-// and current date.
+// TripParams is a helper for two methods: RequestArrivals, RequestDepartures.
+// The Orig and Dest fields are required and must be a 4-letter abbreviation for
+// a station name. Passing in zero-values for both Before, After params is not
+// allowed, however you can pass a zero-value to one or the other. Details on
+// the formatting of Time, Date params can be found in the official BART API
+// docs. Most of the time you'd want to use the zero-value for Time, Data params
+// anyways so you can fallback to the current time and current date.
 type TripParams struct {
 	Orig   string
 	Dest   string
@@ -310,63 +310,27 @@ type TripParams struct {
 	Legend bool
 }
 
-func (p TripParams) validateMap() (map[string]string, error) {
-	params := map[string]string{}
-
-	orig, err := validateStationAbbr(p.Orig)
-	if err != nil {
-		return params, err
-	}
-	params["orig"] = orig
-
-	dest, err := validateStationAbbr(p.Dest)
-	if err != nil {
-		return params, err
-	}
-	params["dest"] = dest
+func (p *TripParams) toURLValues() *url.Values {
+	params := url.Values{}
+	params.Set("orig", p.Orig)
+	params.Set("dest", p.Dest)
 
 	if p.Time != "" {
-		params["time"] = p.Time
+		params.Set("time", p.Time)
 	}
 
 	if p.Date != "" {
-		params["date"] = p.Date
+		params.Set("date", p.Date)
 	}
-
-	if p.Before == 0 && p.After == 0 {
-		// API would return an empty string for value at `TripsResponse.Root.Data.Request`
-		// in this case. I do not know how to handle that difference in type right now.
-		return params, fmt.Errorf("before and after params cannot both == 0")
-	}
-
-	before, err := validateBeforeAfter(p.Before)
-	if err != nil {
-		return params, err
-	}
-	params["b"] = strconv.Itoa(before)
-
-	after, err := validateBeforeAfter(p.After)
-	if err != nil {
-		return params, err
-	}
-	params["a"] = strconv.Itoa(after)
 
 	if p.Legend {
-		params["l"] = "1"
+		params.Set("l", "1")
 	}
 
-	return params, nil
-}
+	// values for Before, After are fixed by BART API if they are outside of
+	// acceptable range.
+	params.Set("b", strconv.Itoa(p.Before))
+	params.Set("a", strconv.Itoa(p.After))
 
-func validateBeforeAfter(val int) (int, error) {
-	if val < 0 || val > 4 {
-		err := fmt.Errorf("value %d invalid. param 'before' or 'after' must be >= 0 && <= 4", val)
-		return 0, err
-	}
-	return val, nil
-}
-
-func validateRouteSchedDate(date string) (string, error) {
-	// TODO: validate format `mm/dd/yyyy` or `wd|sa|su`
-	return date, nil
+	return &params
 }

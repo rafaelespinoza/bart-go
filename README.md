@@ -1,6 +1,7 @@
 # bart
 
 [![GoDoc](https://godoc.org/github.com/rafaelespinoza/bart-go?status.svg)](https://godoc.org/github.com/rafaelespinoza/bart-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rafaelespinoza/bart-go)](https://goreportcard.com/report/github.com/rafaelespinoza/bart-go)
 
 BART API client in golang.
 Supports Advisories, Real-Time Estimates, Routes, Schedules, Stations APIs.

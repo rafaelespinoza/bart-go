@@ -1,19 +1,33 @@
+// Package bart is a wrapper for the BART API. It works with JSON, which is
+// still in beta at the time of this writing. See the official BART docs for
+// information https://api.bart.gov/docs/overview/index.aspx
+//
+// The API request example functions are written with vague regard to the
+// output. However, to execute the examples with go test, we must specify some
+// kind of output. Making real requests to the BART API in tests (as opposed to
+// stubbing responses) is meant to expose unexpected errors or panics, which
+// should help make response handling better in the long run.
 package bart
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
-const (
-	baseURL = "https://api.bart.gov/api"
-	apiKey  = "MW9S-E7SL-26DU-VV8V"
-)
+const apiKey = "MW9S-E7SL-26DU-VV8V"
 
-// Client gives you easy access to several BART API endpoints. See examples for general usage.
+// baseURL is the common part of the URL for any API request. It should only be
+// overridden for testing.
+var baseURL = "https://api.bart.gov/api"
+
+var httpClient = &http.Client{}
+
+// Client gives you easy access to several BART API endpoints. See examples for
+// general usage.
 type Client struct {
 	*AdvisoriesAPI
 	*EstimatesAPI
@@ -22,7 +36,8 @@ type Client struct {
 	*StationsAPI
 }
 
-// ResponseMetaData is contains some data about the response. Not all of the fields are filled by every API endpoint.
+// ResponseMetaData is contains some data about the response. Not all of the
+// fields are filled by every API endpoint.
 type ResponseMetaData struct {
 	URI     CDATASection
 	Date    string      `json:",omitempty"`
@@ -30,58 +45,58 @@ type ResponseMetaData struct {
 	Message interface{} `json:",omitempty"`
 }
 
-// CDATASection is merely a helper for unmarshaling certain fields. The original BART API has long returned XML
-// instead of JSON, and its presence is an artifact of BART's output conversion. This type is meant for internal use
-// and is only exported for documentation purposes since it shows up in so many other type definitions in this package.
+// CDATASection is merely a helper for unmarshaling certain fields. The original
+// BART API has long returned XML instead of JSON, and its presence is an
+// artifact of BART's output conversion. This type is meant for internal use and
+// is only exported for documentation purposes since it shows up in so many
+// other type definitions in this package.
 type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func requestAPI(route, cmd string, params map[string]string, res interface{}) error {
-	uri := prepareRequestURI(route, cmd, params)
-	fmt.Printf("fetching %s\n", uri)
+func requestAPI(route, cmd string, params *url.Values, out interface{}) (err error) {
+	var res *http.Response
 
-	raw, err := newGetReq(&http.Client{}, uri)
+	defer func() {
+		if res != nil && res.Body != nil {
+			res.Body.Close()
+		}
+	}()
+
+	if params == nil {
+		params = &url.Values{}
+	}
+	params.Set("cmd", cmd)
+	params.Set("json", "y")
+	params.Set("key", apiKey)
+	uri := baseURL + route + "?" + params.Encode()
+
+	res, err = httpClient.Get(uri)
 	if err != nil {
 		return err
 	}
 
-	return json.Unmarshal(raw, res)
-}
-
-func prepareRequestURI(route, cmd string, params map[string]string) string {
-	qs := reqParams{cmd, params}
-	return baseURL + route + "?" + qs.encode()
-}
-
-func newGetReq(c *http.Client, uri string) ([]byte, error) {
-	req, err := http.NewRequest("GET", uri, nil)
-
+	raw, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return []byte{}, err
+		return
 	}
 
-	res, err := c.Do(req)
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	return body, err
-}
-
-type reqParams struct {
-	cmd   string
-	pairs map[string]string
-}
-
-func (p reqParams) encode() string {
-	qs := url.Values{}
-	qs.Add("cmd", p.cmd)
-	qs.Add("json", "y")
-	qs.Add("key", apiKey)
-
-	for k, v := range p.pairs {
-		qs.Add(k, v)
+	err = json.Unmarshal(raw, out)
+	if _, ok := (err).(*json.SyntaxError); ok {
+		// Handle any errors from the BART API that are formatted as XML. As of
+		// this writing, the JSON API format is in beta and they never got
+		// around to converting errors to JSON.
+		var xmlMessage struct {
+			Text    string `xml:"message>error>text"`
+			Details string `xml:"message>error>details"`
+		}
+		xmlParseErr := xml.Unmarshal(raw, &xmlMessage)
+		if xmlParseErr != nil {
+			err = xmlParseErr
+			return
+		}
+		err = fmt.Errorf("error: %s. %s", xmlMessage.Text, xmlMessage.Details)
 	}
 
-	return qs.Encode()
+	return
 }
