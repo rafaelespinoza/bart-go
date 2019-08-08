@@ -18,13 +18,25 @@ import (
 	"net/url"
 )
 
-const apiKey = "MW9S-E7SL-26DU-VV8V"
+const (
+	// Key is default API Key that BART gives to all developers. If you have
+	// registered your own key, then you should use the NewClient function.
+	Key     = "MW9S-E7SL-26DU-VV8V"
+	baseURL = "https://api.bart.gov/api"
+)
 
-// baseURL is the common part of the URL for any API request. It should only be
-// overridden for testing.
-var baseURL = "https://api.bart.gov/api"
+var defaultClientConf = &Config{
+	Key:     Key,
+	HTTP:    &http.Client{},
+	baseURL: baseURL,
+}
 
-var httpClient = &http.Client{}
+// A Config is a collection of named parameters for a Client.
+type Config struct {
+	Key     string
+	HTTP    *http.Client
+	baseURL string
+}
 
 // Client gives you easy access to several BART API endpoints. See examples for
 // general usage.
@@ -34,6 +46,34 @@ type Client struct {
 	*RoutesAPI
 	*SchedulesAPI
 	*StationsAPI
+
+	conf *Config
+}
+
+// NewClient allows you to set up a Client. Pass in nil if you want to use the
+// default settings. If you have registered our own API key, then specify
+// conf.Key. If conf.Key is empty, then the default API key is used. If
+// conf.HTTP is empty then the http client is an empty *http.Client from the
+// standard library.
+func NewClient(conf *Config) *Client {
+	if conf == nil {
+		conf = &Config{}
+	}
+	if len(conf.Key) == 0 {
+		conf.Key = Key
+	}
+	if conf.HTTP == nil {
+		conf.HTTP = &http.Client{}
+	}
+	conf.baseURL = baseURL
+	return &Client{
+		conf:          conf,
+		AdvisoriesAPI: &AdvisoriesAPI{conf},
+		EstimatesAPI:  &EstimatesAPI{conf},
+		SchedulesAPI:  &SchedulesAPI{conf},
+		StationsAPI:   &StationsAPI{conf},
+		RoutesAPI:     &RoutesAPI{conf},
+	}
 }
 
 // ResponseMetaData is contains some data about the response. Not all of the
@@ -54,7 +94,11 @@ type CDATASection struct {
 	Value string `json:"#cdata-section"`
 }
 
-func requestAPI(route, cmd string, params *url.Values, out interface{}) (err error) {
+type configuredClient interface {
+	clientConf() *Config
+}
+
+func requestAPI(cc configuredClient, route, cmd string, params *url.Values, out interface{}) (err error) {
 	var res *http.Response
 
 	defer func() {
@@ -62,16 +106,16 @@ func requestAPI(route, cmd string, params *url.Values, out interface{}) (err err
 			res.Body.Close()
 		}
 	}()
-
+	conf := cc.clientConf()
 	if params == nil {
 		params = &url.Values{}
 	}
 	params.Set("cmd", cmd)
 	params.Set("json", "y")
-	params.Set("key", apiKey)
-	uri := baseURL + route + "?" + params.Encode()
+	params.Set("key", conf.Key)
+	uri := conf.baseURL + route + "?" + params.Encode()
 
-	res, err = httpClient.Get(uri)
+	res, err = conf.HTTP.Get(uri)
 	if err != nil {
 		return err
 	}

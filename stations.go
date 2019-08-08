@@ -4,7 +4,16 @@ import "net/url"
 
 // StationsAPI is a namespace for stations information requests to routes at
 // /stn.aspx. See official docs at https://api.bart.gov/docs/stn/.
-type StationsAPI struct{}
+type StationsAPI struct {
+	conf *Config
+}
+
+func (a *StationsAPI) clientConf() *Config {
+	if a != nil && a.conf != nil {
+		return a.conf
+	}
+	return defaultClientConf
+}
 
 // RequestStationAccess requests detailed information how to access the
 // specified station as well as information about the neighborhood around the
@@ -15,6 +24,7 @@ func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessRespon
 	params.Set("orig", orig)
 
 	err = requestAPI(
+		a,
 		"/stn.aspx",
 		"stnaccess",
 		&params,
@@ -57,6 +67,7 @@ func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, 
 	params.Set("orig", orig)
 
 	err = requestAPI(
+		a,
 		"/stn.aspx",
 		"stninfo",
 		&params,
@@ -101,6 +112,7 @@ type StationInfoResponse struct {
 // at https://api.bart.gov/docs/stn/stns.aspx.
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
 	err = requestAPI(
+		a,
 		"/stn.aspx",
 		"stns",
 		nil,

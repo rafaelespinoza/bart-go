@@ -42,13 +42,11 @@ func TestSpecialSchedules(t *testing.T) {
 				panic(err)
 			}
 		}))
-		originalBaseURL := baseURL
-		baseURL = server.URL
+		client := NewClient(nil)
+		client.conf.baseURL = server.URL
 		defer func() {
 			server.Close()
-			baseURL = originalBaseURL
 		}()
-		client := new(Client)
 		_, err := client.RequestSpecialSchedules()
 		if err != nil {
 			t.Errorf(err.Error())
@@ -104,13 +102,11 @@ func TestSpecialSchedules(t *testing.T) {
 				panic(err)
 			}
 		}))
-		originalBaseURL := baseURL
-		baseURL = server.URL
+		client := NewClient(nil)
+		client.conf.baseURL = server.URL
 		defer func() {
 			server.Close()
-			baseURL = originalBaseURL
 		}()
-		client := new(Client)
 		out, err := client.RequestSpecialSchedules()
 		if err != nil {
 			t.Errorf(err.Error())

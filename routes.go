@@ -4,7 +4,16 @@ import "net/url"
 
 // RoutesAPI is a namespace for route information requests to routes at
 // /route.aspx. See official docs at https://api.bart.gov/docs/route/.
-type RoutesAPI struct{}
+type RoutesAPI struct {
+	conf *Config
+}
+
+func (a *RoutesAPI) clientConf() *Config {
+	if a != nil && a.conf != nil {
+		return a.conf
+	}
+	return defaultClientConf
+}
 
 // RequestRoutesInfo requests detailed information for all routes. You probably
 // want to request the current schedule on the current date, so pass in "" for
@@ -18,6 +27,7 @@ func (a *RoutesAPI) RequestRoutesInfo(date string) (res RoutesInfoResponse, err 
 	}
 
 	err = requestAPI(
+		a,
 		"/route.aspx",
 		"routeinfo",
 		&params,
@@ -63,6 +73,7 @@ func (a *RoutesAPI) RequestRoutes(date string) (res RoutesResponse, err error) {
 	}
 
 	err = requestAPI(
+		a,
 		"/route.aspx",
 		"routes",
 		&params,
