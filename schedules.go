@@ -8,7 +8,16 @@ import (
 
 // SchedulesAPI is a namespace for schedule information requests to routes at
 // /sched.aspx. See official docs at https://api.bart.gov/docs/sched/.
-type SchedulesAPI struct{}
+type SchedulesAPI struct {
+	conf *Config
+}
+
+func (a *SchedulesAPI) clientConf() *Config {
+	if a != nil && a.conf != nil {
+		return a.conf
+	}
+	return defaultClientConf
+}
 
 // RequestArrivals requests a trip plan based on arriving by the specified time.
 // Inputs are specified in the TripParams type. See that type's documentation
@@ -16,6 +25,7 @@ type SchedulesAPI struct{}
 // https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"arrive",
 		p.toURLValues(),
@@ -31,6 +41,7 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 // https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"depart",
 		p.toURLValues(),
@@ -87,6 +98,7 @@ type OrigDestTimeData struct {
 // https://api.bart.gov/docs/sched/holiday.aspx.
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"holiday",
 		nil,
@@ -114,6 +126,7 @@ type HolidaySchedulesResponse struct {
 // schedules. See official docs at https://api.bart.gov/docs/sched/scheds.aspx.
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"scheds",
 		nil,
@@ -141,6 +154,7 @@ type AvailableSchedulesResponse struct {
 // https://api.bart.gov/docs/sched/special.aspx.
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"special",
 		nil,
@@ -206,6 +220,7 @@ func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSc
 	}
 
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"stnsched",
 		&params,
@@ -263,6 +278,7 @@ func (a *SchedulesAPI) RequestRouteSchedules(
 	}
 
 	err = requestAPI(
+		a,
 		"/sched.aspx",
 		"routesched",
 		&params,

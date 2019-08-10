@@ -7,7 +7,16 @@ import (
 
 // EstimatesAPI is a namespace for real-time information requests to /etd.aspx.
 // See official docs at https://api.bart.gov/docs/etd/.
-type EstimatesAPI struct{}
+type EstimatesAPI struct {
+	conf *Config
+}
+
+func (a *EstimatesAPI) clientConf() *Config {
+	if a != nil && a.conf != nil {
+		return a.conf
+	}
+	return defaultClientConf
+}
 
 // RequestETD requests estimated departure time for specified station. The orig
 // param must be a 4-letter abbreviation for a station name. Specify plat "1",
@@ -23,6 +32,7 @@ func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse
 	}
 
 	err = requestAPI(
+		a,
 		"/etd.aspx",
 		"etd",
 		params.toURLValues(),
@@ -61,6 +71,7 @@ func (a *EstimatesAPI) RequestEstimate(p EstimateParams) (res EstimatesResponse,
 	params := p.toURLValues()
 
 	err = requestAPI(
+		a,
 		"/etd.aspx",
 		"etd",
 		params,

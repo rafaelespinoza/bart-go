@@ -2,12 +2,22 @@ package bart
 
 // AdvisoriesAPI is a namespace for advisory information requests to routes at
 // /bsa.aspx. See official docs at https://api.bart.gov/docs/bsa/.
-type AdvisoriesAPI struct{}
+type AdvisoriesAPI struct {
+	conf *Config
+}
+
+func (a *AdvisoriesAPI) clientConf() *Config {
+	if a != nil && a.conf != nil {
+		return a.conf
+	}
+	return defaultClientConf
+}
 
 // RequestBSA requests current advisory information. See official docs at
 // https://api.bart.gov/docs/bsa/bsa.aspx.
 func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
 	err = requestAPI(
+		a,
 		"/bsa.aspx",
 		"bsa",
 		nil,
@@ -33,6 +43,7 @@ type AdvisoriesBSAResponse struct {
 // docs at https://api.bart.gov/docs/bsa/elev.aspx.
 func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
 	err = requestAPI(
+		a,
 		"/bsa.aspx",
 		"elev",
 		nil,
@@ -60,6 +71,7 @@ type AdvisoriesElevatorResponse struct {
 // system. See official docs at: https://api.bart.gov/docs/bsa/count.aspx.
 func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
 	err = requestAPI(
+		a,
 		"/bsa.aspx",
 		"count",
 		nil,
