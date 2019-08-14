@@ -343,6 +343,12 @@ func (p *TripParams) toURLValues() *url.Values {
 		params.Set("l", "1")
 	}
 
+	// Sending empty value for both `b`, `a` params (or `b=0`, `a=1`) returns an
+	// object or empty string at TripsResponse.Root.Data.Request, which makes
+	// unmarshaling a real pain. Avoid this case by omitting params.
+	if (p.Before == 0 && p.After == 0) || (p.Before == 0 && p.After == 1) {
+		return &params
+	}
 	// values for Before, After are fixed by BART API if they are outside of
 	// acceptable range.
 	params.Set("b", strconv.Itoa(p.Before))

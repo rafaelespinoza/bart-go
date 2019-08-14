@@ -5,8 +5,128 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 )
+
+func TestTripPlans(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqURL, err := url.ParseRequestURI(r.RequestURI)
+		if err != nil {
+			panic(err)
+		}
+		if reqURL.Path != "/sched.aspx" {
+			t.Errorf("Wrong request path. Got %s, expected %s", reqURL.Path, "/sched.aspx")
+			return
+		}
+		query := reqURL.Query()
+		var a, b int
+		var aOK, bOK bool
+		var params []string
+		if params, aOK = query["a"]; aOK {
+			a, _ = strconv.Atoi(params[0])
+		}
+		if params, bOK := query["b"]; bOK {
+			b, _ = strconv.Atoi(params[0])
+		}
+
+		if (aOK && bOK) && (b == 0 && a == 0) || (b == 0 && a == 1) {
+			// failure expected in this case
+			fmt.Fprint(w, `
+{
+	"root":{
+		"schedule": {
+			"request": {
+				"trip": {
+					"@origTimeMin": "07:37 PM",
+					"@destTimeMin": "07:44 PM"
+				}
+			}
+		}
+	}
+}`)
+		} else {
+			fmt.Fprint(w, `
+{
+	"root":{
+		"schedule": {
+			"request": {
+				"trip": [
+					{ "@origTimeMin": "07:37 PM", "@destTimeMin": "07:44 PM" },
+					{ "@origTimeMin": "07:41 PM", "@destTimeMin": "07:48 PM" }
+				]
+			}
+		}
+	}
+}`)
+		}
+	}))
+
+	client := NewClient(nil)
+	client.conf.baseURL = server.URL
+	defer func() {
+		server.Close()
+	}()
+
+	testTripsResponse := func(t *testing.T, res TripsResponse, err error) {
+		t.Helper()
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		list := res.Root.Data.Request.List
+		if len(list) < 1 {
+			t.Error("no results at Root.Data.Request.List")
+			return
+		}
+
+		for i := range list {
+			if list[i].OrigTimeMin == "" {
+				t.Error("expected non-empty value for OrigTimeMin")
+			}
+			if list[i].DestTimeMin == "" {
+				t.Error("expected non-empty value for DestTimeMin")
+			}
+		}
+	}
+
+	t.Run("Arrivals", func(t *testing.T) {
+		var params TripParams
+		var res TripsResponse
+		var err error
+
+		params = TripParams{Orig: "woak", Dest: "embr"}
+		res, err = client.RequestArrivals(params)
+		testTripsResponse(t, res, err)
+
+		params = TripParams{Orig: "woak", Dest: "embr", Before: 0, After: 1}
+		res, err = client.RequestArrivals(params)
+		testTripsResponse(t, res, err)
+
+		params = TripParams{Orig: "woak", Dest: "embr", Before: 0, After: 4}
+		res, err = client.RequestArrivals(params)
+		testTripsResponse(t, res, err)
+	})
+
+	t.Run("Departures", func(t *testing.T) {
+		var params TripParams
+		var res TripsResponse
+		var err error
+
+		params = TripParams{Orig: "woak", Dest: "embr"}
+		res, err = client.RequestDepartures(params)
+		testTripsResponse(t, res, err)
+
+		params = TripParams{Orig: "woak", Dest: "embr", Before: 0, After: 1}
+		res, err = client.RequestDepartures(params)
+		testTripsResponse(t, res, err)
+
+		params = TripParams{Orig: "woak", Dest: "embr", Before: 0, After: 4}
+		res, err = client.RequestDepartures(params)
+		testTripsResponse(t, res, err)
+	})
+}
 
 func TestSpecialSchedules(t *testing.T) {
 	t.Run("empty data", func(t *testing.T) {
