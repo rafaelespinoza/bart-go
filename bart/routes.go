@@ -1,6 +1,14 @@
 package bart
 
-import "net/url"
+func initRoutesRequest(cmd, date string) (out apiRequest) {
+	out.route = "/route.aspx"
+	out.cmd = cmd
+	out.options = make(map[string][]string)
+	if date != "" {
+		out.options["date"] = []string{date}
+	}
+	return
+}
 
 // RoutesAPI is a namespace for route information requests to routes at
 // /route.aspx. See official docs at https://api.bart.gov/docs/route/.
@@ -20,20 +28,10 @@ func (a *RoutesAPI) clientConf() *Config {
 // date. Otherwise, format like "mm/dd/yyyy". See official docs at
 // https://api.bart.gov/docs/route/routeinfo.aspx.
 func (a *RoutesAPI) RequestRoutesInfo(date string) (res RoutesInfoResponse, err error) {
-	params := url.Values{}
-	params.Set("route", "all")
-	if date != "" {
-		params.Set("date", date)
-	}
+	params := initRoutesRequest("routeinfo", date)
+	params.options["route"] = []string{"all"}
 
-	err = requestAPI(
-		a,
-		"/route.aspx",
-		"routeinfo",
-		&params,
-		&res,
-	)
-
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -67,19 +65,8 @@ type RoutesInfoResponse struct {
 // only want current schedule on current date, just pass empty strings for date.
 // See official docs at https://api.bart.gov/docs/route/routes.aspx.
 func (a *RoutesAPI) RequestRoutes(date string) (res RoutesResponse, err error) {
-	params := url.Values{}
-	if date != "" {
-		params.Set("date", date)
-	}
-
-	err = requestAPI(
-		a,
-		"/route.aspx",
-		"routes",
-		&params,
-		&res,
-	)
-
+	params := initRoutesRequest("routes", date)
+	err = params.requestAPI(a, &res)
 	return
 }
 

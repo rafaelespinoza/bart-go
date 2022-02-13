@@ -2,8 +2,9 @@ package bart_test
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/rafaelespinoza/bart-go"
+	"github.com/rafaelespinoza/bart-go/bart"
 )
 
 func ExampleAdvisoriesAPI() {
@@ -85,7 +86,7 @@ func ExampleStationsAPI() {
 	// Invalid station inputs will return an error.
 	res, err = client.RequestStationAccess("nope")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ok, error expected here")
 	}
 	fmt.Printf("%T\n", res)
 
@@ -105,7 +106,7 @@ func ExampleStationsAPI() {
 
 	// Output:
 	// bart.StationAccessResponse
-	// error: Invalid orig. The orig station parameter NOPE is missing or invalid.
+	// ok, error expected here
 	// bart.StationAccessResponse
 	// bart.StationInfoResponse
 	// bart.StationsResponse
@@ -225,8 +226,9 @@ func ExampleSchedulesAPI() {
 	}
 	fmt.Printf("%T\n", res)
 
-	// Get a station's schedules for specific date..
-	res, err = client.RequestStationSchedules("glen", "8/14/2018")
+	// Get a station's schedules for specific date.
+	date := time.Now().Add(5 * 24 * time.Hour).Format("01/02/2006")
+	res, err = client.RequestStationSchedules("glen", date)
 	if err != nil {
 		fmt.Println(err)
 	}

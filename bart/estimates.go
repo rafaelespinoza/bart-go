@@ -1,14 +1,28 @@
 package bart
 
-import (
-	"net/url"
-	"strconv"
-)
-
 // EstimatesAPI is a namespace for real-time information requests to /etd.aspx.
 // See official docs at https://api.bart.gov/docs/etd/.
 type EstimatesAPI struct {
 	conf *Config
+}
+
+func initEstimatesRequest(orig, plat, dir string) (out apiRequest) {
+	p := EstimateParams{
+		Orig: orig,
+		Plat: plat,
+		Dir:  dir,
+	}
+	out.route = "/etd.aspx"
+	out.cmd = "etd"
+
+	out.options = map[string][]string{"orig": {p.Orig}}
+	if p.Dir != "" {
+		out.options["dir"] = []string{p.Dir}
+	}
+	if p.Plat != "" {
+		out.options["plat"] = []string{p.Plat}
+	}
+	return
 }
 
 func (a *EstimatesAPI) clientConf() *Config {
@@ -25,20 +39,8 @@ func (a *EstimatesAPI) clientConf() *Config {
 // both directions.  See official docs at
 // https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestETD(orig, plat, dir string) (res EstimatesResponse, err error) {
-	params := &EstimateParams{
-		Orig: orig,
-		Plat: plat,
-		Dir:  dir,
-	}
-
-	err = requestAPI(
-		a,
-		"/etd.aspx",
-		"etd",
-		params.toURLValues(),
-		&res,
-	)
-
+	params := initEstimatesRequest(orig, plat, dir)
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -52,32 +54,12 @@ type EstimateParams struct {
 	Dir  string
 }
 
-func (p *EstimateParams) toURLValues() *url.Values {
-	params := url.Values{}
-	params.Set("orig", p.Orig)
-	if p.Dir != "" {
-		params.Set("dir", p.Dir)
-	}
-	if p.Plat != "" {
-		params.Set("plat", p.Plat)
-	}
-	return &params
-}
-
 // RequestEstimate requests estimated departures for a station. It's just like
 // the RequestETD method except it takes an EstimateParams value. See official
 // docs at https://api.bart.gov/docs/etd/etd.aspx.
 func (a *EstimatesAPI) RequestEstimate(p EstimateParams) (res EstimatesResponse, err error) {
-	params := p.toURLValues()
-
-	err = requestAPI(
-		a,
-		"/etd.aspx",
-		"etd",
-		params,
-		&res,
-	)
-
+	params := initEstimatesRequest(p.Orig, p.Plat, p.Dir)
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -96,35 +78,16 @@ type EstimatesResponse struct {
 				Abbreviation string
 				Limited      string
 				Estimates    []struct {
-					Minutes   estiMinute `json:",string"` // effectively an int. Exists b/c "Leaving" == 0
-					Platform  int        `json:",string"`
+					Minutes   Minute `json:",string"`
+					Platform  int    `json:",string"`
 					Direction string
 					Length    int `json:",string"`
 					Color     string
 					Hexcolor  string
-					BikeFlag  boolish `json:",string"`
-					Delay     int     `json:",string"`
+					BikeFlag  Bool `json:",string"`
+					Delay     int  `json:",string"`
 				} `json:"estimate"`
 			} `json:"etd"`
 		} `json:"station"`
 	}
-}
-
-type estiMinute int
-
-func (m *estiMinute) UnmarshalJSON(data []byte) error {
-	str := string(data)
-
-	if str == "Leaving" {
-		*m = estiMinute(0)
-		return nil
-	}
-
-	val, err := strconv.Atoi(str)
-	if err != nil {
-		return err
-	}
-
-	*m = estiMinute(val)
-	return nil
 }

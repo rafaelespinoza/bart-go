@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rafaelespinoza/bart-go"
+	"github.com/rafaelespinoza/bart-go/bart"
 )
 
 type demo struct{}

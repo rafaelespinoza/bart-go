@@ -1,5 +1,12 @@
 package bart
 
+func initAdvisoriesRequest(cmd string) (out apiRequest) {
+	out.route = "/bsa.aspx"
+	out.cmd = cmd
+	out.options = make(map[string][]string)
+	return
+}
+
 // AdvisoriesAPI is a namespace for advisory information requests to routes at
 // /bsa.aspx. See official docs at https://api.bart.gov/docs/bsa/.
 type AdvisoriesAPI struct {
@@ -16,14 +23,8 @@ func (a *AdvisoriesAPI) clientConf() *Config {
 // RequestBSA requests current advisory information. See official docs at
 // https://api.bart.gov/docs/bsa/bsa.aspx.
 func (a *AdvisoriesAPI) RequestBSA() (res AdvisoriesBSAResponse, err error) {
-	err = requestAPI(
-		a,
-		"/bsa.aspx",
-		"bsa",
-		nil,
-		&res,
-	)
-
+	params := initAdvisoriesRequest("bsa")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -42,14 +43,8 @@ type AdvisoriesBSAResponse struct {
 // RequestElevator requests current elevator status information. See official
 // docs at https://api.bart.gov/docs/bsa/elev.aspx.
 func (a *AdvisoriesAPI) RequestElevator() (res AdvisoriesElevatorResponse, err error) {
-	err = requestAPI(
-		a,
-		"/bsa.aspx",
-		"elev",
-		nil,
-		&res,
-	)
-
+	params := initAdvisoriesRequest("elev")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -70,14 +65,8 @@ type AdvisoriesElevatorResponse struct {
 // RequestTrainCount requests the number of trains currently active in the
 // system. See official docs at: https://api.bart.gov/docs/bsa/count.aspx.
 func (a *AdvisoriesAPI) RequestTrainCount() (res AdvisoriesTrainCountResponse, err error) {
-	err = requestAPI(
-		a,
-		"/bsa.aspx",
-		"count",
-		nil,
-		&res,
-	)
-
+	params := initAdvisoriesRequest("count")
+	err = params.requestAPI(a, &res)
 	return
 }
 

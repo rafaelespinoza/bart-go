@@ -1,0 +1,1 @@
+{"?xml":{"@version":"1.0","@encoding":"utf-8"},"root":{"uri":{"#cdata-section":"http://api.bart.gov/api/sched.aspx?cmd=stnsched&orig=12th&l=1&json=y&date=8/14/2018"},"message":{"error":"date/time not in timetable or allowed period"}}}

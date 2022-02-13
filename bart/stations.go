@@ -1,6 +1,14 @@
 package bart
 
-import "net/url"
+func initStationsRequest(cmd, orig string) (out apiRequest) {
+	out.route = "/stn.aspx"
+	out.cmd = cmd
+	out.options = make(map[string][]string)
+	if orig != "" {
+		out.options["orig"] = []string{orig}
+	}
+	return
+}
 
 // StationsAPI is a namespace for stations information requests to routes at
 // /stn.aspx. See official docs at https://api.bart.gov/docs/stn/.
@@ -20,17 +28,8 @@ func (a *StationsAPI) clientConf() *Config {
 // station. Pass in a 4-letter abbreviation for a station as the orig param. See
 // official docs at https://api.bart.gov/docs/stn/stnaccess.aspx.
 func (a *StationsAPI) RequestStationAccess(orig string) (res StationAccessResponse, err error) {
-	params := url.Values{}
-	params.Set("orig", orig)
-
-	err = requestAPI(
-		a,
-		"/stn.aspx",
-		"stnaccess",
-		&params,
-		&res,
-	)
-
+	params := initStationsRequest("stnaccess", orig)
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -50,10 +49,10 @@ type StationAccessResponse struct {
 				BikeStationText CDATASection
 				Destinations    CDATASection
 				Link            string
-				ParkingFlag     boolish `json:"@parking_flag,string"`
-				BikeFlag        boolish `json:"@bike_flag,string"`
-				BikeStation     boolish `json:"@bike_station_flag,string"`
-				LockerFlag      boolish `json:"@locker_flag,string"`
+				ParkingFlag     Bool `json:"@parking_flag,string"`
+				BikeFlag        Bool `json:"@bike_flag,string"`
+				BikeStation     Bool `json:"@bike_station_flag,string"`
+				LockerFlag      Bool `json:"@locker_flag,string"`
 			} `json:"Station"`
 		} `json:"Stations"`
 	}
@@ -63,17 +62,8 @@ type StationAccessResponse struct {
 // station. Pass in a 4-letter abbreviation for a station as the orig param. See
 // official docs at https://api.bart.gov/docs/stn/stninfo.aspx.
 func (a *StationsAPI) RequestStationInfo(orig string) (res StationInfoResponse, err error) {
-	params := url.Values{}
-	params.Set("orig", orig)
-
-	err = requestAPI(
-		a,
-		"/stn.aspx",
-		"stninfo",
-		&params,
-		&res,
-	)
-
+	params := initStationsRequest("stninfo", orig)
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -111,14 +101,8 @@ type StationInfoResponse struct {
 // RequestStations provides a list of all available stations. See official docs
 // at https://api.bart.gov/docs/stn/stns.aspx.
 func (a *StationsAPI) RequestStations() (res StationsResponse, err error) {
-	err = requestAPI(
-		a,
-		"/stn.aspx",
-		"stns",
-		nil,
-		&res,
-	)
-
+	params := initStationsRequest("stns", "")
+	err = params.requestAPI(a, &res)
 	return
 }
 

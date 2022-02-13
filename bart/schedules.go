@@ -2,9 +2,15 @@ package bart
 
 import (
 	"encoding/json"
-	"net/url"
 	"strconv"
 )
+
+func initSchedulesRequest(cmd string) (out apiRequest) {
+	out.route = "/sched.aspx"
+	out.cmd = cmd
+	out.options = make(map[string][]string)
+	return
+}
 
 // SchedulesAPI is a namespace for schedule information requests to routes at
 // /sched.aspx. See official docs at https://api.bart.gov/docs/sched/.
@@ -24,14 +30,8 @@ func (a *SchedulesAPI) clientConf() *Config {
 // for details on requesting an arrival. See official docs at
 // https://api.bart.gov/docs/sched/arrive.aspx.
 func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err error) {
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"arrive",
-		p.toURLValues(),
-		&res,
-	)
-
+	params := p.initRequestParams("arrive")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -40,14 +40,8 @@ func (a *SchedulesAPI) RequestArrivals(p TripParams) (res TripsResponse, err err
 // documentation for details on requesting a departure. See official docs at
 // https://api.bart.gov/docs/sched/depart.aspx.
 func (a *SchedulesAPI) RequestDepartures(p TripParams) (res TripsResponse, err error) {
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"depart",
-		p.toURLValues(),
-		&res,
-	)
-
+	params := p.initRequestParams("depart")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -70,11 +64,11 @@ type TripsResponse struct {
 					TripTime int `json:"@tripTime,string"`
 					Legs     []struct {
 						OrigDestTimeData
-						Order            int     `json:"@order,string"`
-						Line             string  `json:"@line"`
-						BikeFlag         boolish `json:"@bikeflag,string"`
-						TrainHeadStation string  `json:"@trainHeadStation"`
-						Load             int     `json:"@load,string"`
+						Order            int    `json:"@order,string"`
+						Line             string `json:"@line"`
+						BikeFlag         Bool   `json:"@bikeflag,string"`
+						TrainHeadStation string `json:"@trainHeadStation"`
+						Load             int    `json:"@load,string"`
 					} `json:"leg"`
 				} `json:"Trip"`
 			}
@@ -97,14 +91,8 @@ type OrigDestTimeData struct {
 // and what type of schedule will be run on those days.
 // https://api.bart.gov/docs/sched/holiday.aspx.
 func (a *SchedulesAPI) RequestHolidaySchedules() (res HolidaySchedulesResponse, err error) {
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"holiday",
-		nil,
-		&res,
-	)
-
+	params := initSchedulesRequest("holiday")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -125,14 +113,8 @@ type HolidaySchedulesResponse struct {
 // RequestAvailableSchedules requests information about the currently available
 // schedules. See official docs at https://api.bart.gov/docs/sched/scheds.aspx.
 func (a *SchedulesAPI) RequestAvailableSchedules() (res AvailableSchedulesResponse, err error) {
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"scheds",
-		nil,
-		&res,
-	)
-
+	params := initSchedulesRequest("scheds")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -153,14 +135,8 @@ type AvailableSchedulesResponse struct {
 // notices in effect. See official docs at
 // https://api.bart.gov/docs/sched/special.aspx.
 func (a *SchedulesAPI) RequestSpecialSchedules() (res SpecialSchedulesResponse, err error) {
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"special",
-		nil,
-		&res,
-	)
-
+	params := initSchedulesRequest("special")
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -213,20 +189,14 @@ func (r *SpecialSchedulesResponse) UnmarshalJSON(in []byte) (err error) {
 // formatted as "mm/dd/yyyy". Otherwise you can pass in "" to get today's
 // schedule. See official docs at https://api.bart.gov/docs/sched/stnsched.aspx.
 func (a *SchedulesAPI) RequestStationSchedules(orig, date string) (res StationSchedulesResponse, err error) {
-	params := url.Values{}
-	params.Set("orig", orig)
+	params := initSchedulesRequest("stnsched")
+	params.options["orig"] = []string{orig}
+
 	if date != "" {
-		params.Set("date", date)
+		params.options["date"] = []string{date}
 	}
 
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"stnsched",
-		&params,
-		&res,
-	)
-
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -239,14 +209,14 @@ type StationSchedulesResponse struct {
 			Name string
 			Abbr string
 			List []struct {
-				Line             string  `json:"@line"`
-				TrainHeadStation string  `json:"@trainHeadStation"`
-				OrigTime         string  `json:"@origTime"`
-				DestTime         string  `json:"@destTime"`
-				TrainIdx         int     `json:"@trainIdx,string"`
-				BikeFlag         boolish `json:"@bikeflag,string"`
-				TrainID          string  `json:"@trainId"`
-				Load             int     `json:"@load,string"`
+				Line             string `json:"@line"`
+				TrainHeadStation string `json:"@trainHeadStation"`
+				OrigTime         string `json:"@origTime"`
+				DestTime         string `json:"@destTime"`
+				TrainIdx         int    `json:"@trainIdx,string"`
+				BikeFlag         Bool   `json:"@bikeflag,string"`
+				TrainID          string `json:"@trainId"`
+				Load             int    `json:"@load,string"`
 			} `json:"item"`
 		} `json:"station"`
 	}
@@ -258,33 +228,20 @@ type StationSchedulesResponse struct {
 // request specific details, such as the schedule on a certain day or another
 // edition of the schedule pass in non-zero values as needed. See official docs
 // at https://api.bart.gov/docs/sched/routesched.aspx.
-func (a *SchedulesAPI) RequestRouteSchedules(
-	route int,
-	date string,
-	time string,
-	legend bool,
-) (res RouteSchedulesResponse, err error) {
-	params := url.Values{}
-	params.Set("route", strconv.Itoa(route))
-
+func (a *SchedulesAPI) RequestRouteSchedules(route int, date string, time string, legend bool) (res RouteSchedulesResponse, err error) {
+	params := initSchedulesRequest("routesched")
+	params.options["route"] = []string{strconv.Itoa(route)}
 	if date != "" {
-		params.Set("date", date)
+		params.options["date"] = []string{date}
 	}
 	if time != "" {
-		params.Set("time", time)
+		params.options["time"] = []string{time}
 	}
 	if legend {
-		params.Set("l", "1")
+		params.options["l"] = []string{"1"}
 	}
 
-	err = requestAPI(
-		a,
-		"/sched.aspx",
-		"routesched",
-		&params,
-		&res,
-	)
-
+	err = params.requestAPI(a, &res)
 	return
 }
 
@@ -299,10 +256,10 @@ type RouteSchedulesResponse struct {
 				TrainIdx int    `json:"@trainIdx,string"`
 				Index    int    `json:"@index,string"`
 				Stops    []struct {
-					Station  string  `json:"@station"`
-					Load     string  `json:"@load"`
-					Level    string  `json:"@level"`
-					BikeFlag boolish `json:"@bikeflag,string"`
+					Station  string `json:"@station"`
+					Load     string `json:"@load"`
+					Level    string `json:"@level"`
+					BikeFlag Bool   `json:"@bikeflag,string"`
 				} `json:"stop"`
 			} `json:"train"`
 		} `json:"route"`
@@ -326,33 +283,33 @@ type TripParams struct {
 	Legend bool
 }
 
-func (p *TripParams) toURLValues() *url.Values {
-	params := url.Values{}
-	params.Set("orig", p.Orig)
-	params.Set("dest", p.Dest)
+func (p *TripParams) initRequestParams(cmd string) (out apiRequest) {
+	out = initSchedulesRequest(cmd)
+	out.options["orig"] = []string{p.Orig}
+	out.options["dest"] = []string{p.Dest}
 
 	if p.Time != "" {
-		params.Set("time", p.Time)
+		out.options["time"] = []string{p.Time}
 	}
 
 	if p.Date != "" {
-		params.Set("date", p.Date)
+		out.options["date"] = []string{p.Date}
 	}
 
 	if p.Legend {
-		params.Set("l", "1")
+		out.options["l"] = []string{"1"}
 	}
 
 	// Sending empty value for both `b`, `a` params (or `b=0`, `a=1`) returns an
 	// object or empty string at TripsResponse.Root.Data.Request, which makes
 	// unmarshaling a real pain. Avoid this case by omitting params.
 	if (p.Before == 0 && p.After == 0) || (p.Before == 0 && p.After == 1) {
-		return &params
+		return
 	}
 	// values for Before, After are fixed by BART API if they are outside of
 	// acceptable range.
-	params.Set("b", strconv.Itoa(p.Before))
-	params.Set("a", strconv.Itoa(p.After))
+	out.options["b"] = []string{strconv.Itoa(p.Before)}
+	out.options["a"] = []string{strconv.Itoa(p.After)}
 
-	return &params
+	return
 }
